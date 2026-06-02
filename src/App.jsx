@@ -41,6 +41,16 @@ const styles = {
 
 const CREDIT_SOURCES = ["Experian", "Credit Karma", "TransUnion", "Equifax", "Other"];
 
+const US_STATES = [
+  "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware",
+  "District of Columbia","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
+  "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota",
+  "Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico",
+  "New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island",
+  "South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington",
+  "West Virginia","Wisconsin","Wyoming","Other / outside US",
+];
+
 const emptyIncome = () => ({ source: "", amount: "" });
 const emptyAsset = () => ({ type: "401k", amount: "" });
 const emptyBank = () => ({ name: "", description: "" });
@@ -61,6 +71,8 @@ export default function RoguePrepForm() {
     creditSource: "",
     creditScore: "",
     income: [emptyIncome()],
+    savings: "",
+    state: "",
     assets: [emptyAsset()],
     banks: [
       { name: "", description: "Bills / main account" },
@@ -71,6 +83,9 @@ export default function RoguePrepForm() {
     monthlyRent: "",
     monthlyDebtPayments: "",
     totalMonthlyExpenses: "",
+    creditCardDebt: "",
+    personalLoanDebt: "",
+    remainingCreditCardBalances: "",
     creditDebtFreeText: "",
     questions: "",
   });
@@ -94,23 +109,9 @@ export default function RoguePrepForm() {
   const handleSubmit = async () => {
     setSubmitting(true);
 
-    const totalIncome = data.income.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-    const totalExpenses = Number(data.totalMonthlyExpenses) || 0;
-    const debtPayments = Number(data.monthlyDebtPayments) || 0;
-    const score = Number(data.creditScore) || 0;
-
-    let conditionsMet = 0;
-    if (score > 0 && score < 600) conditionsMet++;
-    if (totalIncome - totalExpenses < -1000) conditionsMet++;
-    if (totalExpenses > 0 && (debtPayments / totalExpenses) > 0.6) conditionsMet++;
-
-    const programRecommendation = conditionsMet >= 2 ? "$7,500 (6 months)" : "$5,000 (3 months)";
-
     const payload = {
       contact: { name: data.firstName, email: data.email, closer: closerName },
       ...data,
-      programRecommendation,
-      conditionsMet,
       submittedAt: new Date().toISOString(),
     };
     try {
@@ -198,6 +199,22 @@ export default function RoguePrepForm() {
             ))}
             <button style={styles.addBtn} onClick={() => addItem("income", emptyIncome)}>+ Add income source</button>
           </div>
+
+          <div style={styles.card}>
+            <div style={styles.entryLabel}>Savings &amp; location</div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={styles.label}>Savings ($) <span style={{ color: "#666", fontWeight: 400 }}>— optional</span></label>
+              <div style={styles.helperText}>Cash sitting in checking, savings, or money market accounts. Rough number is fine.</div>
+              <input style={styles.input} placeholder="0" type="number" value={data.savings} onChange={e => update("savings", e.target.value)} />
+            </div>
+            <div>
+              <label style={styles.label}>State <span style={{ color: "#666", fontWeight: 400 }}>— optional</span></label>
+              <select style={styles.selectInput} value={data.state} onChange={e => update("state", e.target.value)}>
+                <option value="">Select your state</option>
+                {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
         </>
       );
 
@@ -281,17 +298,37 @@ export default function RoguePrepForm() {
       case 2: return (
         <div style={styles.card}>
           <div style={styles.entryLabel}>Credit and debt overview</div>
-          <div style={styles.contextBlurb}>This helps us figure out the best way to bundle and optimise your debt so you're paying less interest and clearing it faster. The more detail you can give us, the more specific we can be on the call.</div>
-          <div style={styles.helperText}>
-            Tell us about your credit cards, loans, and any other debt. You can include things like number of cards, total balances, rough interest rates, monthly payments. Whatever you know off the top of your head is fine.
+          <div style={styles.contextBlurb}>This helps us figure out the best way to bundle and optimise your debt so you're paying less interest and clearing it faster. Round numbers are fine.</div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={styles.label}>Credit Card Debt ($)</label>
+            <div style={styles.helperText}>Total balance currently owed across all your credit cards. Credit cards only, no personal loans here.</div>
+            <input style={styles.input} placeholder="0" type="number" value={data.creditCardDebt} onChange={e => update("creditCardDebt", e.target.value)} />
           </div>
-          <textarea
-            style={styles.textarea}
-            placeholder={"e.g. 3 credit cards, roughly $28,000 total. Average APR around 22%. Car loan $15,000 at 6%. Paying about $800/month across everything."}
-            rows={6}
-            value={data.creditDebtFreeText}
-            onChange={e => update("creditDebtFreeText", e.target.value)}
-          />
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={styles.label}>Personal Loan Debt ($) <span style={{ color: "#666", fontWeight: 400 }}>— optional</span></label>
+            <div style={styles.helperText}>Outstanding personal loans, BNPL, anything that isn't a credit card or a mortgage.</div>
+            <input style={styles.input} placeholder="0" type="number" value={data.personalLoanDebt} onChange={e => update("personalLoanDebt", e.target.value)} />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={styles.label}>Remaining Credit Card Balances ($)</label>
+            <div style={styles.helperText}>Total available headroom across all your cards (limits minus current balances). Rough number is fine.</div>
+            <input style={styles.input} placeholder="0" type="number" value={data.remainingCreditCardBalances} onChange={e => update("remainingCreditCardBalances", e.target.value)} />
+          </div>
+
+          <div>
+            <label style={styles.label}>Anything else about your debt? <span style={{ color: "#666", fontWeight: 400 }}>— optional</span></label>
+            <div style={styles.helperText}>Rough APRs, car loans, monthly payments, anything specific that would help on the call.</div>
+            <textarea
+              style={styles.textarea}
+              placeholder={"e.g. Car loan $15,000 at 6%. Two cards at 22% APR. Paying about $800/month across everything."}
+              rows={4}
+              value={data.creditDebtFreeText}
+              onChange={e => update("creditDebtFreeText", e.target.value)}
+            />
+          </div>
         </div>
       );
 
