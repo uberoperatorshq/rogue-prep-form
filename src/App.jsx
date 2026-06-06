@@ -114,6 +114,13 @@ const styles = {
     wordBreak: "normal",
     overflowWrap: "break-word",
   },
+  calcConfirm: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 8,
+    lineHeight: 1.45,
+    fontStyle: "italic",
+  },
   helper: { fontSize: 12, color: "#777", marginBottom: 8, lineHeight: 1.45 },
   nudge: { fontSize: 12, color: NUDGE, marginTop: 6, lineHeight: 1.45 },
   input: {
@@ -447,39 +454,63 @@ export default function RoguePrepForm() {
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
 
-  // Required-field gating. Returns the set of field keys that are blank
-  // for the current step. Inline error renders for any field present here.
+  // ---------------- Required-field gating ----------------
+  // Explicit per-step list of required field keys. Step 4 (Anything else)
+  // has nothing required and is allowed to submit empty.
+  // Keep in sync with: the state hooks above + the inline error blocks.
+  const REQUIRED_KEYS_BY_STEP = {
+    0: ["fullName", "email"],
+    1: ["annualHouseholdIncome"],
+    2: ["creditScore", "creditCardDebt"],
+    3: ["savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
+    4: [],
+  };
+
+  // The live value for each required key. Anything not in this map is treated
+  // as blank.
+  const FIELD_VALUES = {
+    fullName,
+    email,
+    annualHouseholdIncome,
+    creditScore,
+    creditCardDebt,
+    savings,
+    monthlyRentMortgage,
+    monthlyDebtPayments,
+    totalMonthlyExpenses,
+  };
+
+  // Returns { [fieldKey]: true } for every required field on currentStep
+  // that is currently blank. 0 is valid and passes; only truly empty blocks.
+  // For email, invalid shape also counts as missing.
   function requiredBlanksForStep(currentStep) {
     const blanks = {};
-    if (currentStep === 0) {
-      if (isBlankString(fullName)) blanks.fullName = true;
-      // For email, blank OR invalid-shape both count as missing.
-      if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
-    } else if (currentStep === 1) {
-      if (isBlankString(annualHouseholdIncome)) blanks.annualHouseholdIncome = true;
-    } else if (currentStep === 2) {
-      if (isBlankString(creditScore)) blanks.creditScore = true;
-      if (isBlankString(creditCardDebt)) blanks.creditCardDebt = true;
-    } else if (currentStep === 3) {
-      if (isBlankString(savings)) blanks.savings = true;
-      if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
-      if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
-      if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
+    const keys = REQUIRED_KEYS_BY_STEP[currentStep] || [];
+    for (const key of keys) {
+      if (key === "email") {
+        if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
+        continue;
+      }
+      const v = FIELD_VALUES[key];
+      if (isBlankString(v)) blanks[key] = true;
     }
     return blanks;
   }
 
   function goNext() {
     const blanks = requiredBlanksForStep(step);
-    if (Object.keys(blanks).length > 0) {
-      // Block. Surface inline errors on the offending fields.
+    const blankCount = Object.keys(blanks).length;
+    if (blankCount > 0) {
+      // Block advance. Surface inline errors on every offending field at once.
       setErrors((prev) => ({ ...prev, ...blanks }));
       return;
     }
-    // Clear any prior errors for this step's required fields before advancing.
+    // All required fields for this step are filled. Clear any stale errors
+    // for those fields and advance.
+    const stepKeys = REQUIRED_KEYS_BY_STEP[step] || [];
     setErrors((prev) => {
       const next = { ...prev };
-      for (const k of Object.keys(blanks)) delete next[k];
+      for (const k of stepKeys) delete next[k];
       return next;
     });
     if (step < 4) setStep(step + 1);
@@ -648,12 +679,17 @@ export default function RoguePrepForm() {
 
   const stepIdx = step - 1; // 1..4 → 0..3
 
+  // First word of Full Name. Trim + whitespace-split so leading spaces,
+  // tabs, or any run of whitespace don't yield a stray empty/short token.
+  // Blank → empty string → subtitle drops the leading name + comma.
+  const firstName = (fullName || "").trim().split(/\s+/).filter(Boolean)[0] || "";
+
   return (
     <div style={styles.page}>
       <div style={styles.inner}>
         <Header />
         <div style={styles.subtitle}>
-          {fullName ? `${fullName.split(" ")[0]}, ` : ""}rough numbers are totally fine.
+          {firstName ? `${firstName}, ` : ""}rough numbers are totally fine.
         </div>
 
         <div style={styles.progressBar}>
@@ -776,19 +812,29 @@ export default function RoguePrepForm() {
                 if (ccd === null || tcl === null) return null;
                 if (tcl === 0) return null; // can't compute %; show nothing
                 const utilPct = Math.round((ccd / tcl) * 100);
+                let body;
                 if (ccd > tcl) {
                   const over = ccd - tcl;
-                  return (
-                    <div style={styles.calcReadout}>
+                  body = (
+                    <>
                       Based on this, you&apos;re about {fmtMoney(over)} over your total limit, using around {utilPct}% of it.
-                    </div>
+                    </>
+                  );
+                } else {
+                  const available = tcl - ccd;
+                  body = (
+                    <>
+                      Based on this, you have about {fmtMoney(available)} in available credit, and you&apos;re using around {utilPct}% of your total limit.
+                    </>
                   );
                 }
-                const available = tcl - ccd;
                 return (
-                  <div style={styles.calcReadout}>
-                    Based on this, you have about {fmtMoney(available)} in available credit, and you&apos;re using around {utilPct}% of your total limit.
-                  </div>
+                  <>
+                    <div style={styles.calcReadout}>{body}</div>
+                    <div style={styles.calcConfirm}>
+                      Does that look about right? If not, double-check the numbers above.
+                    </div>
+                  </>
                 );
               })()}
             </div>
