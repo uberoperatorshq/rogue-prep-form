@@ -495,8 +495,10 @@ export default function RoguePrepForm() {
       if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
       if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
       // otherAssetsNote stays OPTIONAL
+    } else if (step === 4) {
+      if (isBlankString(stateValue)) blanks.state = true;
+      // questions stays OPTIONAL
     }
-    // step 4 has no required fields
 
     if (Object.keys(blanks).length > 0) {
       setErrors((prev) => ({ ...prev, ...blanks }));
@@ -510,7 +512,7 @@ export default function RoguePrepForm() {
       1: ["annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt"],
       3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
-      4: [],
+      4: ["state"],
     };
     setErrors((prev) => {
       const next = { ...prev };
@@ -1072,9 +1074,7 @@ export default function RoguePrepForm() {
             </div>
 
             <div style={styles.fieldBlockLast}>
-              <label style={styles.label}>
-                State<span style={styles.optionalTag}>(optional)</span>
-              </label>
+              <label style={styles.label}>State</label>
               <div style={styles.helper}>For our records.</div>
               <select
                 style={styles.select}
@@ -1086,6 +1086,11 @@ export default function RoguePrepForm() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+              {errors.state ? (
+                <div style={styles.errText}>
+                  Please select your state.
+                </div>
+              ) : null}
             </div>
           </div>
         )}
