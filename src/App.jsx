@@ -487,10 +487,14 @@ export default function RoguePrepForm() {
       if (isBlankString(creditScore)) blanks.creditScore = true;
       if (isBlankString(creditCardDebt)) blanks.creditCardDebt = true;
     } else if (step === 3) {
+      if (isBlankString(retirement401k)) blanks.retirement401k = true;
+      if (isBlankString(homeEquity)) blanks.homeEquity = true;
+      if (isBlankString(otherAssetsValue)) blanks.otherAssetsValue = true;
       if (isBlankString(savings)) blanks.savings = true;
       if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
       if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
       if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
+      // otherAssetsNote stays OPTIONAL
     }
     // step 4 has no required fields
 
@@ -505,7 +509,7 @@ export default function RoguePrepForm() {
       0: ["fullName", "email"],
       1: ["annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt"],
-      3: ["savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
+      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
       4: [],
     };
     setErrors((prev) => {
@@ -895,6 +899,11 @@ export default function RoguePrepForm() {
                   value={retirement401k}
                   onChange={(e) => setRetirement401k(e.target.value)}
                 />
+                {errors.retirement401k ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
               </div>
 
               <div style={styles.fieldBlock}>
@@ -911,6 +920,11 @@ export default function RoguePrepForm() {
                   value={homeEquity}
                   onChange={(e) => setHomeEquity(e.target.value)}
                 />
+                {errors.homeEquity ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
               </div>
 
               <div style={styles.fieldBlockLast}>
@@ -927,6 +941,11 @@ export default function RoguePrepForm() {
                   value={otherAssetsValue}
                   onChange={(e) => setOtherAssetsValue(e.target.value)}
                 />
+                {errors.otherAssetsValue ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
                 <div style={{ marginTop: 10 }}>
                   <label style={styles.label}>
                     What is it?<span style={styles.optionalTag}>(optional)</span>
