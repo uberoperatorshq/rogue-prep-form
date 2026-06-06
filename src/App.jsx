@@ -102,6 +102,18 @@ const styles = {
   },
   optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
+  calcReadout: {
+    fontSize: 13,
+    color: "#aaa",
+    background: "#1e1e1e",
+    border: `1px solid ${BORDER}`,
+    borderRadius: 8,
+    padding: "10px 12px",
+    marginTop: 10,
+    lineHeight: 1.5,
+    wordBreak: "normal",
+    overflowWrap: "break-word",
+  },
   helper: { fontSize: 12, color: "#777", marginBottom: 8, lineHeight: 1.45 },
   nudge: { fontSize: 12, color: NUDGE, marginTop: 6, lineHeight: 1.45 },
   input: {
@@ -329,6 +341,10 @@ function parseNumOrNull(v) {
   if (s === "") return null;
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
+}
+
+function fmtMoney(n) {
+  return "$" + Math.abs(Math.round(n)).toLocaleString();
 }
 
 function isBlankString(v) {
@@ -704,7 +720,7 @@ export default function RoguePrepForm() {
             <div style={styles.fieldBlock}>
               <label style={styles.label}>Credit card debt ($)</label>
               <div style={styles.helper}>
-                Total balance owed across all your credit cards. Credit cards only.
+                Total balance owed across all your credit cards. Credit cards only. No credit card debt? Put 0.
               </div>
               <input
                 style={styles.input}
@@ -754,6 +770,27 @@ export default function RoguePrepForm() {
                 value={totalCreditLimit}
                 onChange={(e) => setTotalCreditLimit(e.target.value)}
               />
+              {(() => {
+                const ccd = parseNumOrNull(creditCardDebt);
+                const tcl = parseNumOrNull(totalCreditLimit);
+                if (ccd === null || tcl === null) return null;
+                if (tcl === 0) return null; // can't compute %; show nothing
+                const utilPct = Math.round((ccd / tcl) * 100);
+                if (ccd > tcl) {
+                  const over = ccd - tcl;
+                  return (
+                    <div style={styles.calcReadout}>
+                      Based on this, you&apos;re about {fmtMoney(over)} over your total limit, using around {utilPct}% of it.
+                    </div>
+                  );
+                }
+                const available = tcl - ccd;
+                return (
+                  <div style={styles.calcReadout}>
+                    Based on this, you have about {fmtMoney(available)} in available credit, and you&apos;re using around {utilPct}% of your total limit.
+                  </div>
+                );
+              })()}
             </div>
 
             <div style={styles.fieldBlockLast}>
@@ -845,7 +882,7 @@ export default function RoguePrepForm() {
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>Savings ($)</label>
                 <div style={styles.helper}>
-                  Cash sitting in checking, savings, or money market accounts. Rough number is fine.
+                  Cash sitting in checking, savings, or money market accounts. Rough number is fine. If you don&apos;t have any, just put 0.
                 </div>
                 <input
                   style={styles.input}
@@ -865,6 +902,9 @@ export default function RoguePrepForm() {
 
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>Monthly rent / mortgage ($)</label>
+                <div style={styles.helper}>
+                  If you own outright or it&apos;s covered, put 0.
+                </div>
                 <input
                   style={styles.input}
                   placeholder="0"
@@ -883,6 +923,9 @@ export default function RoguePrepForm() {
 
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>Monthly debt payments ($)</label>
+                <div style={styles.helper}>
+                  If you&apos;re not paying anything toward debt right now, put 0.
+                </div>
                 <input
                   style={styles.input}
                   placeholder="0"
