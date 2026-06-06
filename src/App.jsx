@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 // CONFIG
 // =========================================================================
 
-// Set to a video URL (YouTube, Loom, Vimeo, etc.) to render an embed on the
-// completion screen.  Leave empty to render nothing.  Swappable without any
-// other code change.
+// Set to an embed URL (YouTube, Loom, Vimeo, etc.) to wire a real video on
+// the completion screen. Leave empty to render the styled placeholder card
+// (which always shows the CTA below). Swappable without any other code change.
 const COMPLETION_VIDEO_URL = "";
+const COMPLETION_VIDEO_CTA = "While you wait — a quick message from the team";
 
 const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
 
@@ -200,26 +201,22 @@ const styles = {
     marginBottom: 22,
     textAlign: "center",
   },
-  introBullets: {
-    fontSize: 13,
+  introStack: {
+    marginBottom: 26,
+  },
+  introLine: {
+    fontSize: 13.5,
     color: MUTED,
     lineHeight: 1.6,
-    marginBottom: 26,
-    paddingLeft: 0,
-    listStyle: "none",
+    marginBottom: 14,
     textAlign: "left",
   },
-  introBulletRow: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 10,
-    marginBottom: 8,
-  },
-  introBullet: {
-    color: ACCENT,
-    fontWeight: 700,
+  introLineLast: {
+    fontSize: 13.5,
+    color: MUTED,
     lineHeight: 1.6,
-    minWidth: 12,
+    marginBottom: 0,
+    textAlign: "left",
   },
   doneWrap: { textAlign: "center", paddingTop: 40 },
   doneCheck: { fontSize: 56, marginBottom: 12, color: ACCENT, lineHeight: 1 },
@@ -231,15 +228,21 @@ const styles = {
     maxWidth: 440,
     margin: "0 auto 28px",
   },
+  videoCard: {
+    background: CARD,
+    borderRadius: 14,
+    border: `1px solid ${BORDER}`,
+    padding: 16,
+    marginTop: 8,
+  },
   videoFrame: {
     position: "relative",
     width: "100%",
     paddingTop: "56.25%", // 16:9
     background: "#000",
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: "hidden",
     border: `1px solid ${BORDER}`,
-    marginTop: 12,
   },
   iframe: {
     position: "absolute",
@@ -249,13 +252,58 @@ const styles = {
     height: "100%",
     border: 0,
   },
+  videoPlaceholder: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    background:
+      "radial-gradient(circle at center, #2a1a18 0%, #161010 65%, #0a0707 100%)",
+  },
+  playButton: {
+    width: 64,
+    height: 64,
+    borderRadius: "50%",
+    background: "rgba(255,255,255,0.06)",
+    border: `2px solid ${ACCENT}`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeft: `18px solid ${ACCENT}`,
+    borderTop: "11px solid transparent",
+    borderBottom: "11px solid transparent",
+    marginLeft: 5, // optical centering
+  },
+  videoSoon: {
+    fontSize: 11,
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+  },
+  videoCta: {
+    fontSize: 14,
+    color: TEXT,
+    fontWeight: 500,
+    lineHeight: 1.45,
+    textAlign: "center",
+    marginTop: 14,
+  },
 };
 
 // =========================================================================
 // DATA TABLES
 // =========================================================================
-
-const ASSET_TYPES = ["401k", "IRA", "Home equity", "HELOC", "Investments", "Savings", "Other"];
 
 const US_STATES = [
   "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware",
@@ -289,8 +337,6 @@ function looksLikeEmail(v) {
   return typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
-const emptyAsset = () => ({ type: "401k", value: "" });
-
 // =========================================================================
 // SUBCOMPONENTS
 // =========================================================================
@@ -300,6 +346,32 @@ function Header() {
     <div style={styles.logoWrap}>
       <span style={styles.logoRogue}>ROGUE </span>
       <span style={styles.logoFinance}>FINANCE</span>
+    </div>
+  );
+}
+
+function VideoCard() {
+  return (
+    <div style={styles.videoCard}>
+      <div style={styles.videoFrame}>
+        {COMPLETION_VIDEO_URL ? (
+          <iframe
+            style={styles.iframe}
+            src={COMPLETION_VIDEO_URL}
+            title="Rogue Finance"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <div style={styles.videoPlaceholder}>
+            <div style={styles.playButton}>
+              <div style={styles.playTriangle} />
+            </div>
+            <div style={styles.videoSoon}>Video coming soon</div>
+          </div>
+        )}
+      </div>
+      <div style={styles.videoCta}>{COMPLETION_VIDEO_CTA}</div>
     </div>
   );
 }
@@ -344,7 +416,10 @@ export default function RoguePrepForm() {
   const [debtNotes, setDebtNotes] = useState("");
 
   // ---------------- Step 3: Assets & monthly money ----------------
-  const [assets, setAssets] = useState([emptyAsset()]);
+  const [retirement401k, setRetirement401k] = useState("");
+  const [homeEquity, setHomeEquity] = useState("");
+  const [otherAssetsValue, setOtherAssetsValue] = useState("");
+  const [otherAssetsNote, setOtherAssetsNote] = useState("");
   const [savings, setSavings] = useState("");
   const [monthlyRentMortgage, setMonthlyRentMortgage] = useState("");
   const [monthlyDebtPayments, setMonthlyDebtPayments] = useState("");
@@ -359,7 +434,7 @@ export default function RoguePrepForm() {
     setNudges((prev) => ({ ...prev, [key]: !!on }));
   }
 
-  // The 4 essentials.  Nudge if blank when leaving their step.  Never block.
+  // Soft-required fields. Nudge if blank when leaving the step. Never block.
   function evaluateNudgesForStep(currentStep) {
     if (currentStep === 0) {
       nudge("fullName", isBlankString(fullName));
@@ -367,6 +442,8 @@ export default function RoguePrepForm() {
     } else if (currentStep === 2) {
       nudge("creditScore", isBlankString(creditScore));
       nudge("creditCardDebt", isBlankString(creditCardDebt));
+    } else if (currentStep === 3) {
+      nudge("savings", isBlankString(savings));
     }
   }
 
@@ -380,30 +457,9 @@ export default function RoguePrepForm() {
     if (step > 0) setStep(step - 1);
   }
 
-  // Asset row helpers
-  function updateAsset(i, key, val) {
-    setAssets((arr) => {
-      const copy = arr.slice();
-      copy[i] = { ...copy[i], [key]: val };
-      return copy;
-    });
-  }
-  function addAsset() {
-    setAssets((arr) => arr.concat(emptyAsset()));
-  }
-  function removeAsset(i) {
-    setAssets((arr) => arr.filter((_, idx) => idx !== i));
-  }
-
   // ---------------- Submit ----------------
   async function handleSubmit() {
     setSubmitting(true);
-
-    // Filter out asset rows the user never actually touched (no value entered).
-    // A row with a value but the default "401k" type still counts.
-    const assetsForPayload = assets
-      .map((a) => ({ type: a.type, value: parseNumOrNull(a.value) }))
-      .filter((a) => a.value !== null);
 
     const payload = {
       contact: {
@@ -417,7 +473,10 @@ export default function RoguePrepForm() {
       personalLoanDebt: parseNumOrNull(personalLoanDebt),
       totalCreditLimit: parseNumOrNull(totalCreditLimit),
       debtNotes: debtNotes.trim(),
-      assets: assetsForPayload,
+      retirement401k: parseNumOrNull(retirement401k),
+      homeEquity: parseNumOrNull(homeEquity),
+      otherAssetsValue: parseNumOrNull(otherAssetsValue),
+      otherAssetsNote: otherAssetsNote.trim(),
       savings: parseNumOrNull(savings),
       monthlyRentMortgage: parseNumOrNull(monthlyRentMortgage),
       monthlyDebtPayments: parseNumOrNull(monthlyDebtPayments),
@@ -443,6 +502,7 @@ export default function RoguePrepForm() {
 
   // ---------------- Completion ----------------
   if (step === 5) {
+    const reviewer = closerName || "Your strategist";
     return (
       <div style={styles.page}>
         <div style={styles.inner}>
@@ -451,23 +511,9 @@ export default function RoguePrepForm() {
             <div style={styles.doneCheck}>&#10003;</div>
             <div style={styles.doneTitle}>You&apos;re all set.</div>
             <div style={styles.doneBody}>
-              {closerName ? `${closerName} will review this before your call` : "Your strategist will review this before your call"},
-              {" "}so you can hit the ground running.
-              <br />
-              <br />
-              No need to do anything else — just show up.
+              {reviewer} will review everything before your call so you can hit the ground running. Nothing else to do — just show up.
             </div>
-            {COMPLETION_VIDEO_URL ? (
-              <div style={styles.videoFrame}>
-                <iframe
-                  style={styles.iframe}
-                  src={COMPLETION_VIDEO_URL}
-                  title="Rogue Finance"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            ) : null}
+            <VideoCard />
           </div>
         </div>
       </div>
@@ -481,27 +527,19 @@ export default function RoguePrepForm() {
         <div style={styles.inner}>
           <Header />
           <div style={styles.introHeadline}>
-            A few quick things before your call
+            Let&apos;s make your call count
           </div>
-          <div style={styles.introBody}>
-            This is the pre-call prep for the strategy call you booked.
-            It helps your strategist come in ready, so the time we spend
-            is actually useful for you. Takes about 5 minutes.
+          <div style={styles.introStack}>
+            <p style={styles.introLine}>
+              Five minutes here means your strategist already understands your situation before you talk — so the call is spent building your plan, not getting up to speed.
+            </p>
+            <p style={styles.introLine}>
+              100% confidential. Only your strategist sees this. We&apos;ll never ask for account numbers, your SSN, or your driver&apos;s licence — we don&apos;t need any of that.
+            </p>
+            <p style={styles.introLineLast}>
+              Don&apos;t worry about exact figures. A rough guess is far better than leaving something blank. We don&apos;t expect this to be perfect, and we don&apos;t need it to be — just give us your best estimate.
+            </p>
           </div>
-          <ul style={styles.introBullets}>
-            <li style={styles.introBulletRow}>
-              <span style={styles.introBullet}>•</span>
-              <span>Best guesses are completely fine. You can&apos;t get it wrong.</span>
-            </li>
-            <li style={styles.introBulletRow}>
-              <span style={styles.introBullet}>•</span>
-              <span>Skip anything you&apos;re not sure about.</span>
-            </li>
-            <li style={styles.introBulletRow}>
-              <span style={styles.introBullet}>•</span>
-              <span>We don&apos;t need account numbers, driver&apos;s licence, or anything personally identifying. We will never ask for that.</span>
-            </li>
-          </ul>
 
           <div style={styles.card}>
             <div style={styles.cardLabel}>Your details</div>
@@ -515,7 +553,7 @@ export default function RoguePrepForm() {
               />
               {nudges.fullName ? (
                 <div style={styles.nudge}>
-                  This one helps us prep — your best guess is fine, you can still continue.
+                  Your best guess helps your strategist come in ready — you can still continue.
                 </div>
               ) : null}
             </div>
@@ -530,7 +568,7 @@ export default function RoguePrepForm() {
               />
               {nudges.email ? (
                 <div style={styles.nudge}>
-                  This one helps us prep — your best guess is fine, you can still continue.
+                  Your best guess helps your strategist come in ready — you can still continue.
                 </div>
               ) : null}
             </div>
@@ -551,7 +589,7 @@ export default function RoguePrepForm() {
     {
       label: "Step 1 of 4",
       title: "Income",
-      desc: "What’s coming in each year, after tax.",
+      desc: "What’s coming in each year, before tax.",
     },
     {
       label: "Step 2 of 4",
@@ -592,16 +630,15 @@ export default function RoguePrepForm() {
 
         {step === 1 && (
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Annual household net income</div>
+            <div style={styles.cardLabel}>Gross annual household income</div>
             <div style={styles.fieldBlockLast}>
-              <label style={styles.label}>Annual income, after tax ($)</label>
+              <label style={styles.label}>Annual income, before tax ($)</label>
               <div style={styles.helper}>
-                Include everything — salary, a partner&apos;s income, side income,
-                pension, social security, disability. After-tax. Best estimate is fine.
+                Your total household income before tax, per year. Include everything — salary, a partner&apos;s income, side income, pension, benefits. Best estimate is fine.
               </div>
               <input
                 style={styles.input}
-                placeholder="e.g. 120000"
+                placeholder="e.g. 150000"
                 type="number"
                 inputMode="decimal"
                 value={annualHouseholdIncome}
@@ -630,7 +667,7 @@ export default function RoguePrepForm() {
               </div>
               {nudges.creditScore ? (
                 <div style={styles.nudge}>
-                  This one helps us prep — your best guess is fine, you can still continue.
+                  Your best guess helps your strategist come in ready — you can still continue.
                 </div>
               ) : null}
             </div>
@@ -650,7 +687,7 @@ export default function RoguePrepForm() {
               />
               {nudges.creditCardDebt ? (
                 <div style={styles.nudge}>
-                  This one helps us prep — your best guess is fine, you can still continue.
+                  Your best guess helps your strategist come in ready — you can still continue.
                 </div>
               ) : null}
             </div>
@@ -709,69 +746,69 @@ export default function RoguePrepForm() {
           <>
             <div style={styles.card}>
               <div style={styles.cardLabel}>Assets</div>
-              <div style={styles.helper}>
-                This helps us understand what you have available, so we can find ways to
-                free up cash and reduce what you&apos;re paying in interest.
-              </div>
-              {assets.map((a, i) => (
-                <div key={i}>
-                  {i > 0 ? <div style={styles.divider} /> : null}
-                  <div style={styles.row}>
-                    <div style={styles.flex(1.6)}>
-                      {i === 0 ? <label style={styles.label}>Type</label> : null}
-                      <select
-                        style={styles.select}
-                        value={a.type}
-                        onChange={(e) => updateAsset(i, "type", e.target.value)}
-                      >
-                        {ASSET_TYPES.map((t) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div style={styles.flex(1)}>
-                      {i === 0 ? <label style={styles.label}>Value ($)</label> : null}
-                      <input
-                        style={styles.input}
-                        placeholder="0"
-                        type="number"
-                        inputMode="decimal"
-                        value={a.value}
-                        onChange={(e) => updateAsset(i, "value", e.target.value)}
-                      />
-                    </div>
-                    {assets.length > 1 ? (
-                      <button
-                        type="button"
-                        aria-label="Remove asset row"
-                        style={styles.removeBtn}
-                        onClick={() => removeAsset(i)}
-                      >
-                        &times;
-                      </button>
-                    ) : null}
-                  </div>
-                  {a.type === "Home equity" ? (
-                    <div style={styles.helper}>
-                      Home equity = what your home would sell for today minus what
-                      you owe on the mortgage. For example, if your home is worth
-                      $500,000 and you owe $200,000, your equity is $300,000.
-                    </div>
-                  ) : null}
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>401k / retirement ($)</label>
+                <div style={styles.helper}>
+                  Total across any retirement accounts. Enter 0 if none.
                 </div>
-              ))}
-              <button type="button" style={styles.addBtn} onClick={addAsset}>
-                + Add asset
-              </button>
+                <input
+                  style={styles.input}
+                  placeholder="0"
+                  type="number"
+                  inputMode="decimal"
+                  value={retirement401k}
+                  onChange={(e) => setRetirement401k(e.target.value)}
+                />
+              </div>
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>Home equity ($)</label>
+                <div style={styles.helper}>
+                  Roughly your home&apos;s value minus what&apos;s left on the mortgage. Enter 0 if you rent or don&apos;t have any.
+                </div>
+                <input
+                  style={styles.input}
+                  placeholder="0"
+                  type="number"
+                  inputMode="decimal"
+                  value={homeEquity}
+                  onChange={(e) => setHomeEquity(e.target.value)}
+                />
+              </div>
+
+              <div style={styles.fieldBlockLast}>
+                <label style={styles.label}>Other assets ($)</label>
+                <div style={styles.helper}>
+                  Anything else — investments, savings bonds, a HELOC you could draw on, etc. Enter 0 if none.
+                </div>
+                <input
+                  style={styles.input}
+                  placeholder="0"
+                  type="number"
+                  inputMode="decimal"
+                  value={otherAssetsValue}
+                  onChange={(e) => setOtherAssetsValue(e.target.value)}
+                />
+                <div style={{ marginTop: 10 }}>
+                  <label style={styles.label}>
+                    What is it?<span style={styles.optionalTag}>— optional</span>
+                  </label>
+                  <input
+                    style={styles.input}
+                    placeholder="e.g. brokerage account, HELOC, savings bonds"
+                    value={otherAssetsNote}
+                    onChange={(e) => setOtherAssetsNote(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
             <div style={styles.card}>
               <div style={styles.cardLabel}>Savings & monthly money</div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>
-                  Savings ($)<span style={styles.optionalTag}>— optional</span>
-                </label>
+                <label style={styles.label}>Savings ($)</label>
                 <div style={styles.helper}>
                   Cash sitting in checking, savings, or money market accounts. Rough number is fine.
                 </div>
@@ -783,6 +820,11 @@ export default function RoguePrepForm() {
                   value={savings}
                   onChange={(e) => setSavings(e.target.value)}
                 />
+                {nudges.savings ? (
+                  <div style={styles.nudge}>
+                    Your best guess helps your strategist come in ready — you can still continue.
+                  </div>
+                ) : null}
               </div>
 
               <div style={styles.fieldBlock}>
