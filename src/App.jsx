@@ -102,6 +102,17 @@ const styles = {
   },
   optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
+  submitErr: {
+    fontSize: 13,
+    color: ERR,
+    background: "#241616",
+    border: `1px solid ${ERR}`,
+    borderRadius: 8,
+    padding: "10px 12px",
+    marginTop: 14,
+    lineHeight: 1.5,
+    textAlign: "center",
+  },
   calcReadout: {
     fontSize: 13,
     color: "#aaa",
@@ -412,6 +423,7 @@ export default function RoguePrepForm() {
   //   5 = completion
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null); // null or string, inline error under nav
   const [errors, setErrors] = useState({}); // { fieldKey: boolean }, true means blank-required error
 
   // URL params (best-effort prefill; do not trust)
@@ -455,62 +467,50 @@ export default function RoguePrepForm() {
   const [stateValue, setStateValue] = useState("");
 
   // ---------------- Required-field gating ----------------
-  // Explicit per-step list of required field keys. Step 4 (Anything else)
-  // has nothing required and is allowed to submit empty.
-  // Keep in sync with: the state hooks above + the inline error blocks.
-  const REQUIRED_KEYS_BY_STEP = {
-    0: ["fullName", "email"],
-    1: ["annualHouseholdIncome"],
-    2: ["creditScore", "creditCardDebt"],
-    3: ["savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
-    4: [],
-  };
+  // INLINED at the click site below. Direct state reads, no lookup tables,
+  // no indirection. If the bundle that ships to the browser has this code
+  // in it, the gate runs.
 
-  // The live value for each required key. Anything not in this map is treated
-  // as blank.
-  const FIELD_VALUES = {
-    fullName,
-    email,
-    annualHouseholdIncome,
-    creditScore,
-    creditCardDebt,
-    savings,
-    monthlyRentMortgage,
-    monthlyDebtPayments,
-    totalMonthlyExpenses,
-  };
+  function goNext(e) {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
 
-  // Returns { [fieldKey]: true } for every required field on currentStep
-  // that is currently blank. 0 is valid and passes; only truly empty blocks.
-  // For email, invalid shape also counts as missing.
-  function requiredBlanksForStep(currentStep) {
+    // Compute blanks INLINE for the current step. Each branch reads the
+    // hook-state variables directly from this render's closure. 0 is a
+    // valid answer everywhere; only truly empty input blocks.
     const blanks = {};
-    const keys = REQUIRED_KEYS_BY_STEP[currentStep] || [];
-    for (const key of keys) {
-      if (key === "email") {
-        if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
-        continue;
-      }
-      const v = FIELD_VALUES[key];
-      if (isBlankString(v)) blanks[key] = true;
+    if (step === 0) {
+      if (isBlankString(fullName)) blanks.fullName = true;
+      if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
+    } else if (step === 1) {
+      if (isBlankString(annualHouseholdIncome)) blanks.annualHouseholdIncome = true;
+    } else if (step === 2) {
+      if (isBlankString(creditScore)) blanks.creditScore = true;
+      if (isBlankString(creditCardDebt)) blanks.creditCardDebt = true;
+    } else if (step === 3) {
+      if (isBlankString(savings)) blanks.savings = true;
+      if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
+      if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
+      if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
     }
-    return blanks;
-  }
+    // step 4 has no required fields
 
-  function goNext() {
-    const blanks = requiredBlanksForStep(step);
-    const blankCount = Object.keys(blanks).length;
-    if (blankCount > 0) {
-      // Block advance. Surface inline errors on every offending field at once.
+    if (Object.keys(blanks).length > 0) {
       setErrors((prev) => ({ ...prev, ...blanks }));
       return;
     }
-    // All required fields for this step are filled. Clear any stale errors
-    // for those fields and advance.
-    const stepKeys = REQUIRED_KEYS_BY_STEP[step] || [];
+
+    // Step gate passed. Clear any stale errors for THIS step's required keys,
+    // then advance (or submit on step 4).
+    const STEP_KEYS_FOR_CLEAR = {
+      0: ["fullName", "email"],
+      1: ["annualHouseholdIncome"],
+      2: ["creditScore", "creditCardDebt"],
+      3: ["savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
+      4: [],
+    };
     setErrors((prev) => {
       const next = { ...prev };
-      for (const k of stepKeys) delete next[k];
+      for (const k of STEP_KEYS_FOR_CLEAR[step] || []) delete next[k];
       return next;
     });
     if (step < 4) setStep(step + 1);
@@ -524,6 +524,7 @@ export default function RoguePrepForm() {
   // ---------------- Submit ----------------
   async function handleSubmit() {
     setSubmitting(true);
+    setSubmitError(null);
 
     const payload = {
       contact: {
@@ -550,17 +551,35 @@ export default function RoguePrepForm() {
       submittedAt: new Date().toISOString(),
     };
 
+    // Hard timeout so the UI can never sit pending forever on a slow webhook.
+    // The n8n workflow chains GHL search + note + custom-field update + Slack
+    // post, so the real-world response time can spike. We bound the wait.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try {
       await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
-      setSubmitting(false);
+      // Webhook accepted the POST (any non-throwing response). Advance.
       setStep(5);
-    } catch {
+    } catch (err) {
+      // AbortError = our timeout fired. Other errors = network / DNS / CORS.
+      // Keep the user's data so they can re-submit; show a clear, inline
+      // message instead of a browser alert.
+      if (err && err.name === "AbortError") {
+        setSubmitError(
+          "Submission is taking longer than expected. Your details are still here, please try again."
+        );
+      } else {
+        setSubmitError("Something went wrong. Please try again.");
+      }
+    } finally {
+      clearTimeout(timeoutId);
       setSubmitting(false);
-      alert("Something went wrong. Please try again.");
     }
   }
 
@@ -644,7 +663,7 @@ export default function RoguePrepForm() {
           </div>
 
           <div style={styles.nav}>
-            <button style={styles.btnPrimary} onClick={goNext}>
+            <button type="button" style={styles.btnPrimary} onClick={goNext}>
               Start
             </button>
           </div>
@@ -1053,8 +1072,9 @@ export default function RoguePrepForm() {
         )}
 
         <div style={styles.nav}>
-          <button style={styles.btnSecondary} onClick={goBack}>Back</button>
+          <button type="button" style={styles.btnSecondary} onClick={goBack}>Back</button>
           <button
+            type="button"
             style={{ ...styles.btnPrimary, opacity: submitting ? 0.6 : 1 }}
             onClick={goNext}
             disabled={submitting}
@@ -1062,6 +1082,10 @@ export default function RoguePrepForm() {
             {step < 4 ? "Continue" : submitting ? "Submitting…" : "Submit"}
           </button>
         </div>
+
+        {submitError ? (
+          <div style={styles.submitErr}>{submitError}</div>
+        ) : null}
 
         <div style={styles.privacy}>
           Private. Only shared with your strategist.
