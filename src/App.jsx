@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
 const COMPLETION_VIDEO_URL = "";
-const COMPLETION_VIDEO_CTA = "While you wait — a quick message from the team";
+const COMPLETION_VIDEO_CTA = "While you wait, a quick message from the team";
 
 const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
 
@@ -23,7 +23,8 @@ const BORDER = "#2a2a2a";
 const TEXT = "#e8e8e8";
 const MUTED = "#888888";
 const INPUT_BG = "#222222";
-const NUDGE = "#d8a35e";   // amber for soft-nudge text — distinct from error red
+const ERR = "#d96a5a";     // red-amber for inline error text on required-blank
+const NUDGE = "#d8a35e";   // amber, kept for any soft nudges
 
 const styles = {
   page: {
@@ -100,6 +101,7 @@ const styles = {
     lineHeight: 1.35,
   },
   optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
+  errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
   helper: { fontSize: 12, color: "#777", marginBottom: 8, lineHeight: 1.45 },
   nudge: { fontSize: 12, color: NUDGE, marginTop: 6, lineHeight: 1.45 },
   input: {
@@ -387,7 +389,7 @@ export default function RoguePrepForm() {
   //   5 = completion
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [nudges, setNudges] = useState({}); // { fieldKey: boolean }
+  const [errors, setErrors] = useState({}); // { fieldKey: boolean }, true means blank-required error
 
   // URL params (best-effort prefill; do not trust)
   const params = useMemo(() => {
@@ -429,26 +431,41 @@ export default function RoguePrepForm() {
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
 
-  // Soft-nudge helper
-  function nudge(key, on) {
-    setNudges((prev) => ({ ...prev, [key]: !!on }));
-  }
-
-  // Soft-required fields. Nudge if blank when leaving the step. Never block.
-  function evaluateNudgesForStep(currentStep) {
+  // Required-field gating. Returns the set of field keys that are blank
+  // for the current step. Inline error renders for any field present here.
+  function requiredBlanksForStep(currentStep) {
+    const blanks = {};
     if (currentStep === 0) {
-      nudge("fullName", isBlankString(fullName));
-      nudge("email", isBlankString(email));
+      if (isBlankString(fullName)) blanks.fullName = true;
+      // For email, blank OR invalid-shape both count as missing.
+      if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
+    } else if (currentStep === 1) {
+      if (isBlankString(annualHouseholdIncome)) blanks.annualHouseholdIncome = true;
     } else if (currentStep === 2) {
-      nudge("creditScore", isBlankString(creditScore));
-      nudge("creditCardDebt", isBlankString(creditCardDebt));
+      if (isBlankString(creditScore)) blanks.creditScore = true;
+      if (isBlankString(creditCardDebt)) blanks.creditCardDebt = true;
     } else if (currentStep === 3) {
-      nudge("savings", isBlankString(savings));
+      if (isBlankString(savings)) blanks.savings = true;
+      if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
+      if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
+      if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
     }
+    return blanks;
   }
 
   function goNext() {
-    evaluateNudgesForStep(step);
+    const blanks = requiredBlanksForStep(step);
+    if (Object.keys(blanks).length > 0) {
+      // Block. Surface inline errors on the offending fields.
+      setErrors((prev) => ({ ...prev, ...blanks }));
+      return;
+    }
+    // Clear any prior errors for this step's required fields before advancing.
+    setErrors((prev) => {
+      const next = { ...prev };
+      for (const k of Object.keys(blanks)) delete next[k];
+      return next;
+    });
     if (step < 4) setStep(step + 1);
     else if (step === 4) handleSubmit();
   }
@@ -511,7 +528,7 @@ export default function RoguePrepForm() {
             <div style={styles.doneCheck}>&#10003;</div>
             <div style={styles.doneTitle}>You&apos;re all set.</div>
             <div style={styles.doneBody}>
-              {reviewer} will review everything before your call so you can hit the ground running. Nothing else to do — just show up.
+              {reviewer} will review everything before your call so you can hit the ground running. Nothing else to do. Just show up.
             </div>
             <VideoCard />
           </div>
@@ -531,13 +548,16 @@ export default function RoguePrepForm() {
           </div>
           <div style={styles.introStack}>
             <p style={styles.introLine}>
-              Five minutes here means your strategist already understands your situation before you talk — so the call is spent building your plan, not getting up to speed.
+              Five minutes here means your strategist walks in already knowing your situation. The whole call goes to building your plan.
             </p>
             <p style={styles.introLine}>
-              100% confidential. Only your strategist sees this. We&apos;ll never ask for account numbers, your SSN, or your driver&apos;s licence — we don&apos;t need any of that.
+              It&apos;s confidential. Only your strategist sees it. We don&apos;t ask for account numbers, SSN, or your licence. We don&apos;t need any of that.
+            </p>
+            <p style={styles.introLine}>
+              Try to fill everything in, even if it&apos;s just a rough guess. If you genuinely don&apos;t know, an estimate beats leaving it blank.
             </p>
             <p style={styles.introLineLast}>
-              Don&apos;t worry about exact figures. A rough guess is far better than leaving something blank. We don&apos;t expect this to be perfect, and we don&apos;t need it to be — just give us your best estimate.
+              Nobody&apos;s grading you. Best guess is fine.
             </p>
           </div>
 
@@ -551,9 +571,9 @@ export default function RoguePrepForm() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
-              {nudges.fullName ? (
-                <div style={styles.nudge}>
-                  Your best guess helps your strategist come in ready — you can still continue.
+              {errors.fullName ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
             </div>
@@ -566,9 +586,11 @@ export default function RoguePrepForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              {nudges.email ? (
-                <div style={styles.nudge}>
-                  Your best guess helps your strategist come in ready — you can still continue.
+              {errors.email ? (
+                <div style={styles.errText}>
+                  {isBlankString(email)
+                    ? "Best guess is fine, but please don't leave this blank."
+                    : "Please enter a valid email."}
                 </div>
               ) : null}
             </div>
@@ -594,7 +616,7 @@ export default function RoguePrepForm() {
     {
       label: "Step 2 of 4",
       title: "Credit & debt",
-      desc: "Helps us figure out the best way to structure things for you.",
+      desc: "A picture of where your credit and debt stand right now.",
     },
     {
       label: "Step 3 of 4",
@@ -634,16 +656,22 @@ export default function RoguePrepForm() {
             <div style={styles.fieldBlockLast}>
               <label style={styles.label}>Annual income, before tax ($)</label>
               <div style={styles.helper}>
-                Your total household income before tax, per year. Include everything — salary, a partner&apos;s income, side income, pension, benefits. Best estimate is fine.
+                Total household income before tax, per year. Salary, a partner&apos;s income, side income, pension, benefits, all of it. Rough number is fine.
               </div>
               <input
                 style={styles.input}
                 placeholder="e.g. 150000"
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 inputMode="decimal"
                 value={annualHouseholdIncome}
                 onChange={(e) => setAnnualHouseholdIncome(e.target.value)}
               />
+              {errors.annualHouseholdIncome ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
+                </div>
+              ) : null}
             </div>
           </div>
         )}
@@ -658,6 +686,7 @@ export default function RoguePrepForm() {
                 style={styles.input}
                 placeholder="e.g. 712"
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 inputMode="numeric"
                 value={creditScore}
                 onChange={(e) => setCreditScore(e.target.value)}
@@ -665,9 +694,9 @@ export default function RoguePrepForm() {
               <div style={styles.helper}>
                 Any bureau works. Not sure? Just give your best guess.
               </div>
-              {nudges.creditScore ? (
-                <div style={styles.nudge}>
-                  Your best guess helps your strategist come in ready — you can still continue.
+              {errors.creditScore ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
             </div>
@@ -681,20 +710,21 @@ export default function RoguePrepForm() {
                 style={styles.input}
                 placeholder="0"
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 inputMode="decimal"
                 value={creditCardDebt}
                 onChange={(e) => setCreditCardDebt(e.target.value)}
               />
-              {nudges.creditCardDebt ? (
-                <div style={styles.nudge}>
-                  Your best guess helps your strategist come in ready — you can still continue.
+              {errors.creditCardDebt ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
             </div>
 
             <div style={styles.fieldBlock}>
               <label style={styles.label}>
-                Personal loan debt ($)<span style={styles.optionalTag}>— optional</span>
+                Personal loan debt ($)<span style={styles.optionalTag}>(optional)</span>
               </label>
               <div style={styles.helper}>
                 Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage.
@@ -703,6 +733,7 @@ export default function RoguePrepForm() {
                 style={styles.input}
                 placeholder="0"
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 inputMode="decimal"
                 value={personalLoanDebt}
                 onChange={(e) => setPersonalLoanDebt(e.target.value)}
@@ -712,12 +743,13 @@ export default function RoguePrepForm() {
             <div style={styles.fieldBlock}>
               <label style={styles.label}>Total credit limit across all cards ($)</label>
               <div style={styles.helper}>
-                The combined limit on all your cards (not what you owe — the total you could borrow).
+                The combined limit on all your cards. Not what you owe, the total you could borrow.
               </div>
               <input
                 style={styles.input}
                 placeholder="e.g. 45000"
                 type="number"
+                onWheel={(e) => e.currentTarget.blur()}
                 inputMode="decimal"
                 value={totalCreditLimit}
                 onChange={(e) => setTotalCreditLimit(e.target.value)}
@@ -726,7 +758,7 @@ export default function RoguePrepForm() {
 
             <div style={styles.fieldBlockLast}>
               <label style={styles.label}>
-                Anything else about your debt?<span style={styles.optionalTag}>— optional</span>
+                Anything else about your debt?<span style={styles.optionalTag}>(optional)</span>
               </label>
               <div style={styles.helper}>
                 Rough APRs, car loans, monthly payments, anything specific that would help on the call.
@@ -756,6 +788,7 @@ export default function RoguePrepForm() {
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={retirement401k}
                   onChange={(e) => setRetirement401k(e.target.value)}
@@ -771,6 +804,7 @@ export default function RoguePrepForm() {
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={homeEquity}
                   onChange={(e) => setHomeEquity(e.target.value)}
@@ -780,19 +814,20 @@ export default function RoguePrepForm() {
               <div style={styles.fieldBlockLast}>
                 <label style={styles.label}>Other assets ($)</label>
                 <div style={styles.helper}>
-                  Anything else — investments, savings bonds, a HELOC you could draw on, etc. Enter 0 if none.
+                  Anything else: investments, savings bonds, a HELOC you could draw on. Enter 0 if none.
                 </div>
                 <input
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={otherAssetsValue}
                   onChange={(e) => setOtherAssetsValue(e.target.value)}
                 />
                 <div style={{ marginTop: 10 }}>
                   <label style={styles.label}>
-                    What is it?<span style={styles.optionalTag}>— optional</span>
+                    What is it?<span style={styles.optionalTag}>(optional)</span>
                   </label>
                   <input
                     style={styles.input}
@@ -816,13 +851,14 @@ export default function RoguePrepForm() {
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={savings}
                   onChange={(e) => setSavings(e.target.value)}
                 />
-                {nudges.savings ? (
-                  <div style={styles.nudge}>
-                    Your best guess helps your strategist come in ready — you can still continue.
+                {errors.savings ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
               </div>
@@ -833,10 +869,16 @@ export default function RoguePrepForm() {
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={monthlyRentMortgage}
                   onChange={(e) => setMonthlyRentMortgage(e.target.value)}
                 />
+                {errors.monthlyRentMortgage ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
               </div>
 
               <div style={styles.fieldBlock}>
@@ -845,25 +887,37 @@ export default function RoguePrepForm() {
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={monthlyDebtPayments}
                   onChange={(e) => setMonthlyDebtPayments(e.target.value)}
                 />
+                {errors.monthlyDebtPayments ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
               </div>
 
               <div style={styles.fieldBlockLast}>
                 <label style={styles.label}>Total monthly expenses ($)</label>
                 <div style={styles.helper}>
-                  Everything you spend in a month — bills, groceries, subscriptions, everything. Rough number is fine.
+                  Everything you spend in a month: bills, groceries, subscriptions, all of it. Rough number is fine.
                 </div>
                 <input
                   style={styles.input}
                   placeholder="0"
                   type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
                   value={totalMonthlyExpenses}
                   onChange={(e) => setTotalMonthlyExpenses(e.target.value)}
                 />
+                {errors.totalMonthlyExpenses ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
               </div>
             </div>
           </>
@@ -875,7 +929,7 @@ export default function RoguePrepForm() {
 
             <div style={styles.fieldBlock}>
               <label style={styles.label}>
-                Questions or notes<span style={styles.optionalTag}>— optional</span>
+                Questions or notes<span style={styles.optionalTag}>(optional)</span>
               </label>
               <div style={styles.helper}>
                 Anything you want to bring up on the call, anything on your mind,
@@ -892,7 +946,7 @@ export default function RoguePrepForm() {
 
             <div style={styles.fieldBlockLast}>
               <label style={styles.label}>
-                State<span style={styles.optionalTag}>— optional</span>
+                State<span style={styles.optionalTag}>(optional)</span>
               </label>
               <div style={styles.helper}>For our records.</div>
               <select
@@ -921,9 +975,7 @@ export default function RoguePrepForm() {
         </div>
 
         <div style={styles.privacy}>
-          Your information is private and only shared with your strategist.
-          We don&apos;t need any personally identifiable information like
-          driver&apos;s licence numbers or account numbers. We will never ask for that.
+          Private. Only shared with your strategist.
         </div>
       </div>
     </div>
