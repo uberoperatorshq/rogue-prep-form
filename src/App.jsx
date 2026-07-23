@@ -8,7 +8,9 @@ import { useMemo, useState } from "react";
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
 const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/5sj1ootwdv";
-const COMPLETION_VIDEO_CTA = "While you wait, a quick message from the team";
+const COMPLETION_VIDEO_TITLE = "Meet Joanna, our Head Coach";
+const COMPLETION_VIDEO_CTA =
+  "Behind the scenes: what it's actually like to work with us. Watch it before your call, it'll make the whole thing make more sense.";
 
 const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
 
@@ -267,6 +269,14 @@ const styles = {
     padding: 16,
     marginTop: 8,
   },
+  videoTitle: {
+    fontSize: 18,
+    fontWeight: 600,
+    color: "#fff",
+    lineHeight: 1.3,
+    textAlign: "center",
+    marginBottom: 12,
+  },
   videoFrame: {
     position: "relative",
     width: "100%",
@@ -389,6 +399,7 @@ function Header() {
 function VideoCard() {
   return (
     <div style={styles.videoCard}>
+      <div style={styles.videoTitle}>{COMPLETION_VIDEO_TITLE}</div>
       <div style={styles.videoFrame}>
         {COMPLETION_VIDEO_URL ? (
           <iframe
@@ -600,7 +611,7 @@ export default function RoguePrepForm() {
             <div style={styles.doneCheck}>&#10003;</div>
             <div style={styles.doneTitle}>You&apos;re all set.</div>
             <div style={styles.doneBody}>
-              {reviewer} will review everything before your call so you can hit the ground running. Nothing else to do. Just show up.
+              {reviewer} will review everything before your call so you can hit the ground running. One thing left to do before your call: watch this.
             </div>
             <VideoCard />
           </div>
