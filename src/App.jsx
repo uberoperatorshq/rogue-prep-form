@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 // Set to an embed URL (YouTube, Loom, Vimeo, etc.) to wire a real video on
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
-const COMPLETION_VIDEO_URL = "https://www.youtube.com/embed/yGtVb25DJiM";
+const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/5sj1ootwdv";
 const COMPLETION_VIDEO_CTA = "While you wait, a quick message from the team";
 
 const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
