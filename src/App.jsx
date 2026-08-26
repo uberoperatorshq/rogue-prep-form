@@ -357,6 +357,31 @@ const US_STATES = [
   "West Virginia","Wisconsin","Wyoming","Other / outside US",
 ];
 
+const BANK_CHECK_OPTIONS = [
+  "Multiple times a day",
+  "Daily",
+  "A few times a week",
+  "Weekly",
+  "A few times a month",
+  "Rarely, I avoid looking",
+];
+// financialFrustration is deliberately free text with no example options:
+// pre-written choices lead the answer, and closers want the prospect's own words.
+
+const LITERACY_OPTIONS = [
+  { value: "0", label: "0 - I have no idea what I'm doing" },
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4", label: "4" },
+  { value: "5", label: "5" },
+  { value: "6", label: "6" },
+  { value: "7", label: "7" },
+  { value: "8", label: "8" },
+  { value: "9", label: "9" },
+  { value: "10", label: "10 - I should be in charge of the US Treasury" },
+];
+
 // =========================================================================
 // HELPERS
 // =========================================================================
@@ -473,7 +498,12 @@ export default function RoguePrepForm() {
   const [monthlyDebtPayments, setMonthlyDebtPayments] = useState("");
   const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState("");
 
-  // ---------------- Step 4: Anything else ----------------
+  // ---------------- Step 4: You & money ----------------
+  const [bankCheckFrequency, setBankCheckFrequency] = useState("");
+  const [financialLiteracy, setFinancialLiteracy] = useState("");
+  const [moneyRelationshipWord, setMoneyRelationshipWord] = useState("");
+  const [successSentence, setSuccessSentence] = useState("");
+  const [financialFrustration, setFinancialFrustration] = useState("");
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
 
@@ -505,10 +535,14 @@ export default function RoguePrepForm() {
       if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
       if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
       if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
+      if (isBlankString(stateValue)) blanks.state = true;
       // otherAssetsNote stays OPTIONAL
     } else if (step === 4) {
-      if (isBlankString(stateValue)) blanks.state = true;
-      // questions stays OPTIONAL
+      if (isBlankString(bankCheckFrequency)) blanks.bankCheckFrequency = true;
+      if (isBlankString(financialLiteracy)) blanks.financialLiteracy = true;
+      if (isBlankString(moneyRelationshipWord)) blanks.moneyRelationshipWord = true;
+      if (isBlankString(successSentence)) blanks.successSentence = true;
+      // financialFrustration and questions stay OPTIONAL
     }
 
     if (Object.keys(blanks).length > 0) {
@@ -522,8 +556,8 @@ export default function RoguePrepForm() {
       0: ["fullName", "email"],
       1: ["annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt"],
-      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses"],
-      4: ["state"],
+      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses", "state"],
+      4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord", "successSentence"],
     };
     setErrors((prev) => {
       const next = { ...prev };
@@ -564,6 +598,11 @@ export default function RoguePrepForm() {
       monthlyDebtPayments: parseNumOrNull(monthlyDebtPayments),
       totalMonthlyExpenses: parseNumOrNull(totalMonthlyExpenses),
       state: stateValue ? stateValue : null,
+      bankCheckFrequency: bankCheckFrequency || null,
+      financialLiteracy: parseNumOrNull(financialLiteracy),
+      moneyRelationshipWord: moneyRelationshipWord.trim(),
+      successSentence: successSentence.trim(),
+      financialFrustration: financialFrustration.trim(),
       questions: questions.trim(),
       submittedAt: new Date().toISOString(),
     };
@@ -708,8 +747,8 @@ export default function RoguePrepForm() {
     },
     {
       label: "Step 4 of 4",
-      title: "Anything else",
-      desc: "Questions, notes, anything you want us to know.",
+      title: "You & money",
+      desc: "Numbers are done. Four quick gut answers, no wrong ones.",
     },
   ];
 
@@ -1039,7 +1078,7 @@ export default function RoguePrepForm() {
                 ) : null}
               </div>
 
-              <div style={styles.fieldBlockLast}>
+              <div style={styles.fieldBlock}>
                 <label style={styles.label}>Total monthly expenses ($)</label>
                 <div style={styles.helper}>
                   Everything you spend in a month: bills, groceries, subscriptions, all of it. Rough number is fine.
@@ -1059,51 +1098,138 @@ export default function RoguePrepForm() {
                   </div>
                 ) : null}
               </div>
+
+              <div style={styles.fieldBlockLast}>
+                <label style={styles.label}>State</label>
+                <div style={styles.helper}>For our records.</div>
+                <select
+                  style={styles.select}
+                  value={stateValue}
+                  onChange={(e) => setStateValue(e.target.value)}
+                >
+                  <option value="">Select your state</option>
+                  {US_STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {errors.state ? (
+                  <div style={styles.errText}>
+                    Please select your state.
+                  </div>
+                ) : null}
+              </div>
             </div>
           </>
         )}
 
         {step === 4 && (
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Anything else</div>
+          <>
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>You &amp; money</div>
 
-            <div style={styles.fieldBlock}>
-              <label style={styles.label}>
-                Questions or notes<span style={styles.optionalTag}>(optional)</span>
-              </label>
-              <div style={styles.helper}>
-                Anything you want to bring up on the call, anything on your mind,
-                or anything you think we should know.
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>How often do you check your bank balance?</label>
+                <select
+                  style={styles.select}
+                  value={bankCheckFrequency}
+                  onChange={(e) => setBankCheckFrequency(e.target.value)}
+                >
+                  <option value="">Select one</option>
+                  {BANK_CHECK_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+                {errors.bankCheckFrequency ? (
+                  <div style={styles.errText}>Please pick one.</div>
+                ) : null}
               </div>
-              <textarea
-                style={styles.textarea}
-                rows={5}
-                placeholder="Type here…"
-                value={questions}
-                onChange={(e) => setQuestions(e.target.value)}
-              />
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>
+                  On a scale of 0-10, how financially literate are you?
+                </label>
+                <select
+                  style={styles.select}
+                  value={financialLiteracy}
+                  onChange={(e) => setFinancialLiteracy(e.target.value)}
+                >
+                  <option value="">Select one</option>
+                  {LITERACY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {errors.financialLiteracy ? (
+                  <div style={styles.errText}>Please pick a number.</div>
+                ) : null}
+              </div>
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>
+                  One word to describe your relationship with money
+                </label>
+                <input
+                  style={styles.input}
+                  placeholder="e.g. complicated, distant, hopeful"
+                  value={moneyRelationshipWord}
+                  onChange={(e) => setMoneyRelationshipWord(e.target.value)}
+                />
+                {errors.moneyRelationshipWord ? (
+                  <div style={styles.errText}>One word is all it takes.</div>
+                ) : null}
+              </div>
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>
+                  Finish this sentence: &quot;I&apos;ll finally feel successful when...&quot;
+                </label>
+                <input
+                  style={styles.input}
+                  placeholder="...I stop stressing every time a bill hits"
+                  value={successSentence}
+                  onChange={(e) => setSuccessSentence(e.target.value)}
+                />
+                {errors.successSentence ? (
+                  <div style={styles.errText}>
+                    First thing that came to mind is the right answer.
+                  </div>
+                ) : null}
+              </div>
+
+              <div style={styles.fieldBlockLast}>
+                <label style={styles.label}>
+                  What feels most frustrating about your finances right now?
+                  <span style={styles.optionalTag}>(optional)</span>
+                </label>
+                <div style={styles.helper}>A few words is plenty.</div>
+                <input
+                  style={styles.input}
+                  placeholder="Type here…"
+                  value={financialFrustration}
+                  onChange={(e) => setFinancialFrustration(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div style={styles.fieldBlockLast}>
-              <label style={styles.label}>State</label>
-              <div style={styles.helper}>For our records.</div>
-              <select
-                style={styles.select}
-                value={stateValue}
-                onChange={(e) => setStateValue(e.target.value)}
-              >
-                <option value="">Select your state</option>
-                {US_STATES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              {errors.state ? (
-                <div style={styles.errText}>
-                  Please select your state.
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Anything else</div>
+              <div style={styles.fieldBlockLast}>
+                <label style={styles.label}>
+                  Questions or notes<span style={styles.optionalTag}>(optional)</span>
+                </label>
+                <div style={styles.helper}>
+                  Anything you want to bring up on the call, anything on your mind,
+                  or anything you think we should know.
                 </div>
-              ) : null}
+                <textarea
+                  style={styles.textarea}
+                  rows={5}
+                  placeholder="Type here…"
+                  value={questions}
+                  onChange={(e) => setQuestions(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         <div style={styles.nav}>
