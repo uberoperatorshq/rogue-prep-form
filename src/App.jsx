@@ -502,7 +502,6 @@ export default function RoguePrepForm() {
   const [bankCheckFrequency, setBankCheckFrequency] = useState("");
   const [financialLiteracy, setFinancialLiteracy] = useState("");
   const [moneyRelationshipWord, setMoneyRelationshipWord] = useState("");
-  const [successSentence, setSuccessSentence] = useState("");
   const [financialFrustration, setFinancialFrustration] = useState("");
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
@@ -541,7 +540,6 @@ export default function RoguePrepForm() {
       if (isBlankString(bankCheckFrequency)) blanks.bankCheckFrequency = true;
       if (isBlankString(financialLiteracy)) blanks.financialLiteracy = true;
       if (isBlankString(moneyRelationshipWord)) blanks.moneyRelationshipWord = true;
-      if (isBlankString(successSentence)) blanks.successSentence = true;
       // financialFrustration and questions stay OPTIONAL
     }
 
@@ -557,7 +555,7 @@ export default function RoguePrepForm() {
       1: ["annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt"],
       3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses", "state"],
-      4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord", "successSentence"],
+      4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
     };
     setErrors((prev) => {
       const next = { ...prev };
@@ -601,7 +599,6 @@ export default function RoguePrepForm() {
       bankCheckFrequency: bankCheckFrequency || null,
       financialLiteracy: parseNumOrNull(financialLiteracy),
       moneyRelationshipWord: moneyRelationshipWord.trim(),
-      successSentence: successSentence.trim(),
       financialFrustration: financialFrustration.trim(),
       questions: questions.trim(),
       submittedAt: new Date().toISOString(),
@@ -748,7 +745,7 @@ export default function RoguePrepForm() {
     {
       label: "Step 4 of 4",
       title: "You & money",
-      desc: "Numbers are done. Four quick gut answers, no wrong ones.",
+      desc: "Numbers are done. A few quick gut answers, no wrong ones.",
     },
   ];
 
@@ -1169,7 +1166,7 @@ export default function RoguePrepForm() {
                 </label>
                 <input
                   style={styles.input}
-                  placeholder="e.g. complicated, distant, hopeful"
+                  placeholder="Type here…"
                   value={moneyRelationshipWord}
                   onChange={(e) => setMoneyRelationshipWord(e.target.value)}
                 />
@@ -1178,29 +1175,11 @@ export default function RoguePrepForm() {
                 ) : null}
               </div>
 
-              <div style={styles.fieldBlock}>
-                <label style={styles.label}>
-                  Finish this sentence: &quot;I&apos;ll finally feel successful when...&quot;
-                </label>
-                <input
-                  style={styles.input}
-                  placeholder="...I stop stressing every time a bill hits"
-                  value={successSentence}
-                  onChange={(e) => setSuccessSentence(e.target.value)}
-                />
-                {errors.successSentence ? (
-                  <div style={styles.errText}>
-                    First thing that came to mind is the right answer.
-                  </div>
-                ) : null}
-              </div>
-
               <div style={styles.fieldBlockLast}>
                 <label style={styles.label}>
                   What feels most frustrating about your finances right now?
                   <span style={styles.optionalTag}>(optional)</span>
                 </label>
-                <div style={styles.helper}>A few words is plenty.</div>
                 <input
                   style={styles.input}
                   placeholder="Type here…"
