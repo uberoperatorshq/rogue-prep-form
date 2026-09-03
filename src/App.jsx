@@ -12,6 +12,8 @@ const COMPLETION_VIDEO_TITLE = "Pre-Call Training with Andy";
 const COMPLETION_VIDEO_CTA =
   "Andy walks through exactly how we work and what happens on your call. Watch it start to finish. If you skip it, the first part of your call goes to covering this instead of your plan.";
 
+const COMPLETION_VIDEO_RUNTIME = "20 min";
+
 const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
 
 // =========================================================================
@@ -423,14 +425,14 @@ function Header() {
 
 function VideoCard() {
   return (
-    <div style={styles.videoCard}>
-      <div style={styles.videoTitle}>{COMPLETION_VIDEO_TITLE}</div>
-      <div style={styles.videoFrame}>
+    <div className="done-video-wrap">
+      <div className="done-video-glow" />
+      <div className="done-video-frame">
         {COMPLETION_VIDEO_URL ? (
           <iframe
             style={styles.iframe}
             src={COMPLETION_VIDEO_URL}
-            title="Rogue Finance"
+            title={COMPLETION_VIDEO_TITLE}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
@@ -443,7 +445,6 @@ function VideoCard() {
           </div>
         )}
       </div>
-      <div style={styles.videoCta}>{COMPLETION_VIDEO_CTA}</div>
     </div>
   );
 }
@@ -457,7 +458,12 @@ export default function RoguePrepForm() {
   //   0 = intro (identity)
   //   1..4 = data steps (progress bar shows these)
   //   5 = completion
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("view") === "complete"
+      ? 5
+      : 0
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null); // null or string, inline error under nav
   const [errors, setErrors] = useState({}); // { fieldKey: boolean }, true means blank-required error
@@ -640,17 +646,23 @@ export default function RoguePrepForm() {
   if (step === 5) {
     const reviewer = closerName || "Your strategist";
     return (
-      <div style={styles.page}>
-        <div style={styles.inner}>
+      <div style={styles.page} className="done-page">
+        <div className="done-inner">
           <Header />
-          <div style={styles.doneWrap}>
-            <div style={styles.doneCheck}>&#10003;</div>
-            <div style={styles.doneTitle}>You&apos;re all set.</div>
-            <div style={styles.doneBody}>
-              {reviewer} will review everything before your call so you can hit the ground running. One thing left before your call: watch this, all the way through.
+          <div className="done-hero">
+            <div className="done-check">&#10003;</div>
+            <div className="done-eyebrow">You&apos;re all set.</div>
+            <h1 className="done-title">{COMPLETION_VIDEO_TITLE}</h1>
+            <p className="done-body">
+              {reviewer} will review your answers before the call. One thing left: watch this, start to finish.
+            </p>
+            <div className="done-pills">
+              <span className="done-pill">{COMPLETION_VIDEO_RUNTIME}</span>
+              <span className="done-pill done-pill-accent">Watch before your call</span>
             </div>
-            <VideoCard />
           </div>
+          <VideoCard />
+          <p className="done-cta">{COMPLETION_VIDEO_CTA}</p>
         </div>
       </div>
     );
