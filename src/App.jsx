@@ -8,11 +8,48 @@ import { useMemo, useState } from "react";
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
 const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/it6avo5zs1";
-const COMPLETION_VIDEO_TITLE = "Pre-Call Training with Andy";
-const COMPLETION_VIDEO_CTA =
-  "Andy walks through exactly how we work and what happens on your call. Watch it start to finish. If you skip it, the first part of your call goes to covering this instead of your plan.";
+const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
+const COMPLETION_VIDEO_BODY =
+  "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
+const COMPLETION_VIDEO_COVERS = [
+  "Why your money does what it does, and why a budget was never going to fix it",
+  "The exact system we build for clients, account by account",
+  "How the call runs, and what we tell you if it is not a fit",
+];
 
-const COMPLETION_VIDEO_RUNTIME = "20 min";
+// Verbatim Trustpilot reviews, same six the GHL confirmation page shows first.
+const REVIEWS = [
+  {
+    "name": "Emma Skelton",
+    "date": "March 28, 2026",
+    "text": "Andy was just fabulous. He was gracious, non-judgemental and patient as we worked through all our finances. Fast forward a year, and we paid off over $100k in car loans and other debt, and never felt deprived. This year, we have been able to put over $200,000 into our retirement accounts, something that seemed impossible just a few years ago. 100% recommended!!"
+  },
+  {
+    "name": "Gabe Smith",
+    "date": "April 16, 2026",
+    "text": "Andy's coaching helped us to completely rethink the way we handle our business and personal finance. He showed us the power of automation and the freedom of systems that work. But the biggest payoff didn't have anything to do with money. His thoughtful, kind, direct, and relationally attuned approach provided a pathway for growth in our marriage too."
+  },
+  {
+    "name": "Bridget Finn",
+    "date": "January 28, 2026",
+    "text": "I was never good with money. I had a lot of shame around it. Over the years my income increased but I always found myself in the same paycheck-to-paycheck cycle. Andy's \"recipe\" helped me build a system where my money works for me. My bills are paid automatically. My savings are growing automatically. The stress and fear has been replaced with pride!"
+  },
+  {
+    "name": "Lea Murrell",
+    "date": "March 11, 2026",
+    "text": "Andy, Joanna, and the Rogue Financial process have changed my life so incredibly significantly in three short months! Following a divorce, some other financial setbacks, and largely just not being very financially savvy I was not in a good place. The program itself, the communication, and the encouragement was exactly what I needed. I hate to think about where I would be if I never started it."
+  },
+  {
+    "name": "Jimmy Vanaria",
+    "date": "March 23, 2026",
+    "text": "My wife and I have been stuck in a paycheck-to-paycheck cycle for our entire marriage. Working with Rogue Finance completely changed that in just 90 days. They helped us build a clear, simple system that actually works for our real lives. We're not just \"getting by\" anymore. We feel in control."
+  },
+  {
+    "name": "Camille West",
+    "date": "February 11, 2026",
+    "text": "The team at Rogue Finance helped me gain meaningful clarity and structure around my finances. What stood out was not just the mindset shift they encouraged, but the practical, sustainable system they introduced. Andy, Joanna, and the entire team were knowledgeable, supportive, and genuinely invested in my progress."
+  }
+];
 
 const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
 
@@ -425,26 +462,23 @@ function Header() {
 
 function VideoCard() {
   return (
-    <div className="done-video-wrap">
-      <div className="done-video-glow" />
-      <div className="done-video-frame">
-        {COMPLETION_VIDEO_URL ? (
-          <iframe
-            style={styles.iframe}
-            src={COMPLETION_VIDEO_URL}
-            title={COMPLETION_VIDEO_TITLE}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        ) : (
-          <div style={styles.videoPlaceholder}>
-            <div style={styles.playButton}>
-              <div style={styles.playTriangle} />
-            </div>
-            <div style={styles.videoSoon}>Video coming soon</div>
+    <div className="done-video-frame">
+      {COMPLETION_VIDEO_URL ? (
+        <iframe
+          style={styles.iframe}
+          src={COMPLETION_VIDEO_URL}
+          title={COMPLETION_VIDEO_TITLE}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      ) : (
+        <div style={styles.videoPlaceholder}>
+          <div style={styles.playButton}>
+            <div style={styles.playTriangle} />
           </div>
-        )}
-      </div>
+          <div style={styles.videoSoon}>Video coming soon</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -644,25 +678,68 @@ export default function RoguePrepForm() {
 
   // ---------------- Completion ----------------
   if (step === 5) {
-    const reviewer = closerName || "Your strategist";
     return (
-      <div style={styles.page} className="done-page">
+      <div className="done-page">
         <div className="done-inner">
           <Header />
           <div className="done-hero">
-            <div className="done-check">&#10003;</div>
-            <div className="done-eyebrow">You&apos;re all set.</div>
-            <h1 className="done-title">{COMPLETION_VIDEO_TITLE}</h1>
+            <h1 className="done-title">
+              Form done. <span className="done-title-accent">One more thing.</span>
+            </h1>
             <p className="done-body">
-              {reviewer} will review your answers before the call. One thing left: watch this, start to finish.
+              {closerName
+                ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
+                : "Your strategist will go through your answers before the call."}{" "}
+              Do the one thing below and the call starts from your numbers.
             </p>
-            <div className="done-pills">
-              <span className="done-pill">{COMPLETION_VIDEO_RUNTIME}</span>
-              <span className="done-pill done-pill-accent">Watch before your call</span>
+          </div>
+          <div className="done-card">
+            <div className="done-tag">Last step</div>
+            <h2 className="done-card-title">{COMPLETION_VIDEO_TITLE}</h2>
+            <p className="done-card-body">{COMPLETION_VIDEO_BODY}</p>
+            <ul className="done-covers">
+              {COMPLETION_VIDEO_COVERS.map((t) => (
+                <li key={t}>
+                  <span className="done-covers-check">&#10003;</span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <VideoCard />
+          </div>
+
+          <div className="done-stats">
+            <div className="done-stat">
+              <div className="done-stat-num">350+</div>
+              <div className="done-stat-label">Families helped since 2022</div>
+            </div>
+            <div className="done-stat-divider" />
+            <div className="done-stat">
+              <div className="done-stat-label">Rated excellent on</div>
+              <div className="done-stat-tp">
+                <span className="done-tp-name">Trustpilot</span>
+                <span className="done-tp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                <span className="done-tp-score">4.7</span>
+              </div>
             </div>
           </div>
-          <VideoCard />
-          <p className="done-cta">{COMPLETION_VIDEO_CTA}</p>
+
+          <div className="done-proof">
+            <h2 className="done-proof-title">
+              You made <span className="done-title-accent">the right call.</span>
+            </h2>
+            <p className="done-proof-sub">Here&apos;s what people say after sitting where you&apos;re sitting now.</p>
+            <div className="done-reviews">
+              {REVIEWS.map((r) => (
+                <div className="done-review" key={r.name}>
+                  <div className="done-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                  <div className="done-review-name">{r.name}</div>
+                  <div className="done-review-date">{r.date}</div>
+                  <p className="done-review-text">{r.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
