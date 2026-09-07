@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 // Set to an embed URL (YouTube, Loom, Vimeo, etc.) to wire a real video on
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
-const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/it6avo5zs1";
+const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02";
 const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
 const COMPLETION_VIDEO_BODY =
   "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
