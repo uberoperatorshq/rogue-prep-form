@@ -719,7 +719,7 @@ export default function RoguePrepForm() {
               <div className="done-stat-tp">
                 <span className="done-tp-name">Trustpilot</span>
                 <span className="done-tp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
-                <span className="done-tp-score">4.7</span>
+                <span className="done-tp-score">4.8</span>
               </div>
             </div>
           </div>
