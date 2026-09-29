@@ -17,6 +17,43 @@ const COMPLETION_VIDEO_COVERS = [
   "How the call runs, and what we tell you if it is not a fit",
 ];
 
+// Six break-out videos from Andy, one question each. Page order per the
+// 2026-09-07 page copy v2.2: top row bank access, coaching, partner; bottom
+// row debt, affording it, deciding. Wistia hashed ids.
+const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
+const BREAKOUT_VIDEOS = [
+  {
+    id: "r90kiktykf",
+    q: "Do you get access to my bank accounts?",
+    a: "No. Never. Your accounts, your logins, a coach beside you while you click.",
+  },
+  {
+    id: "p25usn12bi",
+    q: "Would you be coaching me personally?",
+    a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
+  },
+  {
+    id: "ywdmppplme",
+    q: "What if I want to do this without my partner?",
+    a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
+  },
+  {
+    id: "x1qh1guv4j",
+    q: "Is this debt consolidation? Or debt settlement?",
+    a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
+  },
+  {
+    id: "ncze2s7sqh",
+    q: "What if I can't afford this right now?",
+    a: "Don't do the math against today's balance. What standing still costs, in interest.",
+  },
+  {
+    id: "w9d1mfco1k",
+    q: "Do I have to decide on the call?",
+    a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
+  },
+];
+
 // Verbatim Trustpilot reviews, same six the GHL confirmation page shows first.
 const REVIEWS = [
   {
@@ -483,6 +520,32 @@ function VideoCard() {
   );
 }
 
+function BreakoutVideos() {
+  return (
+    <div className="done-qs">
+      <h2 className="done-qs-title">{BREAKOUT_TITLE}</h2>
+      <div className="done-qs-grid">
+        {BREAKOUT_VIDEOS.map((v) => (
+          <div className="done-q" key={v.id}>
+            <div className="done-video-frame done-q-frame">
+              <iframe
+                style={styles.iframe}
+                src={`https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`}
+                title={v.q}
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <div className="done-q-label">{v.q}</div>
+            <p className="done-q-teaser">{v.a}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // COMPONENT
 // =========================================================================
@@ -707,6 +770,8 @@ export default function RoguePrepForm() {
             </ul>
             <VideoCard />
           </div>
+
+          <BreakoutVideos />
 
           <div className="done-stats">
             <div className="done-stat">
