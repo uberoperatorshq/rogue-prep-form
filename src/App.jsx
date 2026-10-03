@@ -17,9 +17,9 @@ const COMPLETION_VIDEO_COVERS = [
   "How the call runs, and what we tell you if it is not a fit",
 ];
 
-// Six break-out videos from Andy, one question each. Page order per the
-// 2026-09-07 page copy v2.2: top row bank access, coaching, partner; bottom
-// row debt, affording it, deciding. Wistia hashed ids.
+// Six break-out videos from Andy, one question each. Top row bank access,
+// coaching, affording it (moved up 2026-10-03, best completion rate); bottom
+// row partner, debt, deciding. Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
 const BREAKOUT_VIDEOS = [
   {
@@ -33,6 +33,11 @@ const BREAKOUT_VIDEOS = [
     a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
   },
   {
+    id: "ncze2s7sqh",
+    q: "What if I can't afford this right now?",
+    a: "Don't do the math against today's balance. What standing still costs, in interest.",
+  },
+  {
     id: "ywdmppplme",
     q: "What if I want to do this without my partner?",
     a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
@@ -41,11 +46,6 @@ const BREAKOUT_VIDEOS = [
     id: "x1qh1guv4j",
     q: "Is this debt consolidation? Or debt settlement?",
     a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
-  },
-  {
-    id: "ncze2s7sqh",
-    q: "What if I can't afford this right now?",
-    a: "Don't do the math against today's balance. What standing still costs, in interest.",
   },
   {
     id: "w9d1mfco1k",
