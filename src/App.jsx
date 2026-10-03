@@ -484,6 +484,29 @@ function looksLikeEmail(v) {
   return typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
+// Tag Wistia plays with the prospect's email so stats name the viewer.
+// No valid email = untagged player, same as before.
+function withViewer(url, email) {
+  if (!looksLikeEmail(email)) return url;
+  return url + (url.includes("?") ? "&" : "?") + "email=" + encodeURIComponent(email.trim());
+}
+
+// Remember the submitter on this device so a return visit via the
+// ?view=complete link still tags plays. Storage can throw; never block.
+const VIEWER_KEY = "rogue_prep_viewer_email";
+function saveViewer(email) {
+  try {
+    if (looksLikeEmail(email)) window.localStorage.setItem(VIEWER_KEY, email.trim());
+  } catch (e) {}
+}
+function loadViewer() {
+  try {
+    return window.localStorage.getItem(VIEWER_KEY) || "";
+  } catch (e) {
+    return "";
+  }
+}
+
 // =========================================================================
 // SUBCOMPONENTS
 // =========================================================================
@@ -497,13 +520,13 @@ function Header() {
   );
 }
 
-function VideoCard() {
+function VideoCard({ viewer }) {
   return (
     <div className="done-video-frame">
       {COMPLETION_VIDEO_URL ? (
         <iframe
           style={styles.iframe}
-          src={COMPLETION_VIDEO_URL}
+          src={withViewer(COMPLETION_VIDEO_URL, viewer)}
           title={COMPLETION_VIDEO_TITLE}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -520,7 +543,7 @@ function VideoCard() {
   );
 }
 
-function BreakoutVideos() {
+function BreakoutVideos({ viewer }) {
   return (
     <div className="done-qs">
       <h2 className="done-qs-title">{BREAKOUT_TITLE}</h2>
@@ -530,7 +553,10 @@ function BreakoutVideos() {
             <div className="done-video-frame done-q-frame">
               <iframe
                 style={styles.iframe}
-                src={`https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`}
+                src={withViewer(
+                  `https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`,
+                  viewer
+                )}
                 title={v.q}
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -721,6 +747,7 @@ export default function RoguePrepForm() {
         signal: controller.signal,
       });
       // Webhook accepted the POST (any non-throwing response). Advance.
+      saveViewer(email);
       setStep(5);
     } catch (err) {
       // AbortError = our timeout fired. Other errors = network / DNS / CORS.
@@ -741,6 +768,7 @@ export default function RoguePrepForm() {
 
   // ---------------- Completion ----------------
   if (step === 5) {
+    const viewer = looksLikeEmail(email) ? email : loadViewer();
     return (
       <div className="done-page">
         <div className="done-inner">
@@ -768,10 +796,10 @@ export default function RoguePrepForm() {
                 </li>
               ))}
             </ul>
-            <VideoCard />
+            <VideoCard viewer={viewer} />
           </div>
 
-          <BreakoutVideos />
+          <BreakoutVideos viewer={viewer} />
 
           <div className="done-stats">
             <div className="done-stat">
