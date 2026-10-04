@@ -7,7 +7,8 @@ import { useMemo, useState } from "react";
 // Set to an embed URL (YouTube, Loom, Vimeo, etc.) to wire a real video on
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
-const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02";
+// Andy plays at 1.5x with captions on by default (Patrick 2026-10-04); viewers can still change both in the player.
+const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true";
 const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
 const COMPLETION_VIDEO_BODY =
   "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
@@ -554,7 +555,7 @@ function BreakoutVideos({ viewer }) {
               <iframe
                 style={styles.iframe}
                 src={withViewer(
-                  `https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`,
+                  `https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`,
                   viewer
                 )}
                 title={v.q}
