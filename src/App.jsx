@@ -578,6 +578,103 @@ function BreakoutVideos({ viewer }) {
   );
 }
 
+// Retirement snapshot (2026-10-20): same benchmark the setters see in the setter tool
+// (setter-tool src/lib/retirementSnapshot.js). Fidelity savings-by-age guideline, published
+// points with a straight line between. Retirement balance only, home equity not counted.
+// Only shown after a real submit (needs their income); the age is typed in right here.
+const SNAPSHOT_MILESTONES = [[30, 1], [40, 3], [50, 6], [60, 8], [67, 10]];
+
+function benchmarkMultiple(age) {
+  if (age <= 30) return 1;
+  if (age >= 67) return 10;
+  for (let i = 0; i < SNAPSHOT_MILESTONES.length - 1; i++) {
+    const [a0, m0] = SNAPSHOT_MILESTONES[i];
+    const [a1, m1] = SNAPSHOT_MILESTONES[i + 1];
+    if (age >= a0 && age <= a1) return m0 + ((m1 - m0) * (age - a0)) / (a1 - a0);
+  }
+  return 10;
+}
+
+function shortMoney(n) {
+  const a = Math.abs(n);
+  if (a >= 1e6) return "$" + (a / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
+  if (a >= 1e3) return "$" + Math.round(a / 1e3) + "k";
+  return "$" + Math.round(a);
+}
+
+function RetirementSnapshot({ income, retirement }) {
+  const [ageInput, setAgeInput] = useState("");
+  if (!income || income <= 0) return null;
+  const age = parseInt(ageInput, 10);
+  const ageOk = Number.isFinite(age) && age >= 18 && age <= 100;
+  const have = retirement && retirement > 0 ? retirement : 0;
+  let snap = null;
+  if (ageOk) {
+    const targetMultiple = benchmarkMultiple(age);
+    const target = targetMultiple * income;
+    snap = {
+      label: age < 30 ? "by 30" : age > 67 ? "by 67" : "at " + age,
+      target,
+      targetMultiple,
+      haveMultiple: have / income,
+      gap: target - have,
+    };
+  }
+  const x = (m) => (m >= 10 ? Math.round(m) : m.toFixed(1).replace(/\.0$/, "")) + "x your income";
+  return (
+    <div className="done-snap">
+      <h2 className="done-qs-title">How your retirement savings compare</h2>
+      <p className="done-proof-sub">
+        A rough check against a common savings-by-age benchmark. Enter your age to see it.
+      </p>
+      <div className="done-snap-card">
+        <label className="done-snap-age">
+          <span>Your age</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min="18"
+            max="100"
+            placeholder="e.g. 42"
+            value={ageInput}
+            onWheel={(e) => e.currentTarget.blur()}
+            onChange={(e) => setAgeInput(e.target.value)}
+          />
+        </label>
+        {snap ? (
+          <div className="done-snap-grid">
+            <div className="done-snap-cell">
+              <div className="done-snap-k">Common benchmark {snap.label}</div>
+              <div className="done-snap-v">{shortMoney(snap.target)}</div>
+              <div className="done-snap-m">{x(snap.targetMultiple)}</div>
+            </div>
+            <div className="done-snap-cell">
+              <div className="done-snap-k">You have</div>
+              <div className="done-snap-v">{shortMoney(have)}</div>
+              <div className="done-snap-m">{x(snap.haveMultiple)}</div>
+            </div>
+            <div className="done-snap-cell">
+              <div className="done-snap-k">{snap.gap > 0 ? "Gap" : "Ahead by"}</div>
+              <div className={"done-snap-v " + (snap.gap > 0 ? "done-snap-gap" : "done-snap-ahead")}>
+                {shortMoney(snap.gap)}
+              </div>
+              <div className="done-snap-m">
+                {(Math.abs(snap.gap) / income).toFixed(1).replace(/\.0$/, "")} years of income
+              </div>
+            </div>
+          </div>
+        ) : null}
+        <p className="done-snap-note">
+          Uses the retirement balance and household income you entered. Home equity is not counted.
+          Benchmark: Fidelity&apos;s savings-by-age guideline (1x income by 30, 3x by 40, 6x by 50,
+          8x by 60, 10x by 67). A guideline, not advice for your situation. Your strategist can walk
+          through it with you on the call.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // COMPONENT
 // =========================================================================
@@ -878,6 +975,11 @@ export default function RoguePrepForm() {
           </div>
 
           <BreakoutVideos viewer={viewer} />
+
+          <RetirementSnapshot
+            income={parseNumOrNull(annualHouseholdIncome)}
+            retirement={parseNumOrNull(retirement401k)}
+          />
 
           <div className="done-stats">
             <div className="done-stat">
