@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // =========================================================================
 // CONFIG
@@ -89,7 +89,11 @@ const REVIEWS = [
   }
 ];
 
-const WEBHOOK_URL = "https://uberops.app.n8n.cloud/webhook/prep-form";
+// VITE_* overrides exist only for local testing against a mock; production uses the defaults.
+const WEBHOOK_URL = import.meta.env.VITE_SUBMIT_URL || "https://uberops.app.n8n.cloud/webhook/prep-form";
+// Pre-fill: the closer booking link carries a signed token (?t=). This returns the
+// setter's numbers for the contact; anything else and the form stays blank.
+const PREFILL_URL = import.meta.env.VITE_PREFILL_URL || "https://uberops.app.n8n.cloud/webhook/prep-prefill";
 
 // =========================================================================
 // THEME TOKENS  (kept consistent with the existing live form)
@@ -181,6 +185,7 @@ const styles = {
   },
   optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
+  prefillHint: { fontSize: 12, color: "#777", marginTop: 6, lineHeight: 1.45 },
   submitErr: {
     fontSize: 13,
     color: ERR,
@@ -600,6 +605,7 @@ export default function RoguePrepForm() {
   const paramName = (params.get("name") || "").trim();
   const paramEmail = (params.get("email") || "").trim();
   const paramCloser = (params.get("closer") || "").trim();
+  const paramToken = (params.get("t") || "").trim();
 
   // ---------------- identity (intro) ----------------
   const [fullName, setFullName] = useState(paramName || "");
@@ -635,6 +641,70 @@ export default function RoguePrepForm() {
   const [financialFrustration, setFinancialFrustration] = useState("");
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
+
+  // ---------------- Pre-fill from the setter call ----------------
+  // Only fills fields the prospect has not typed in. The snapshot rides along
+  // on submit so n8n can show the closer what changed.
+  const [prefill, setPrefill] = useState({
+    status: "none",
+    reason: paramToken ? "pending" : "no_token",
+    setter: "",
+    submittedAt: null,
+    values: {},
+  });
+
+  useEffect(() => {
+    if (!paramToken) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const fill = (setter, v) => {
+      if (v === undefined || v === null) return;
+      setter((cur) => (isBlankString(cur) ? String(v) : cur));
+    };
+    fetch(PREFILL_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ t: paramToken }),
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!j || !j.ok || !j.values) {
+          setPrefill((p) => ({ ...p, reason: (j && j.reason) || "error" }));
+          return;
+        }
+        const v = j.values;
+        fill(setAnnualHouseholdIncome, v.annualHouseholdIncome);
+        fill(setCreditScore, v.creditScore);
+        fill(setCreditCardDebt, v.creditCardDebt);
+        fill(setPersonalLoanDebt, v.personalLoanDebt);
+        fill(setRetirement401k, v.retirement401k);
+        fill(setHomeEquity, v.homeEquity);
+        fill(setSavings, v.savings);
+        if (typeof v.state === "string" && US_STATES.includes(v.state)) fill(setStateValue, v.state);
+        setPrefill({
+          status: "filled",
+          reason: "",
+          setter: j.setter || "",
+          submittedAt: j.submittedAt || null,
+          values: v,
+        });
+      })
+      .catch((err) => {
+        setPrefill((p) => ({ ...p, reason: err && err.name === "AbortError" ? "timeout" : "error" }));
+      })
+      .finally(() => clearTimeout(timeoutId));
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [paramToken]);
+
+  function PrefillHint({ field }) {
+    if (prefill.status !== "filled" || !(field in prefill.values)) return null;
+    const who = prefill.setter ? `your call with ${prefill.setter}` : "your call with our team";
+    return <div style={styles.prefillHint}>From {who}. Change it if it&apos;s off.</div>;
+  }
 
   // ---------------- Required-field gating ----------------
   // INLINED at the click site below. Direct state reads, no lookup tables,
@@ -731,6 +801,13 @@ export default function RoguePrepForm() {
       moneyRelationshipWord: moneyRelationshipWord.trim(),
       financialFrustration: financialFrustration.trim(),
       questions: questions.trim(),
+      prefill: {
+        status: prefill.status,
+        reason: prefill.reason === "pending" ? "timeout" : prefill.reason,
+        setter: prefill.setter,
+        submittedAt: prefill.submittedAt,
+        values: prefill.values,
+      },
       submittedAt: new Date().toISOString(),
     };
 
@@ -974,6 +1051,7 @@ export default function RoguePrepForm() {
                 value={annualHouseholdIncome}
                 onChange={(e) => setAnnualHouseholdIncome(e.target.value)}
               />
+              <PrefillHint field="annualHouseholdIncome" />
               {errors.annualHouseholdIncome ? (
                 <div style={styles.errText}>
                   Best guess is fine, but please don&apos;t leave this blank.
@@ -998,6 +1076,7 @@ export default function RoguePrepForm() {
                 value={creditScore}
                 onChange={(e) => setCreditScore(e.target.value)}
               />
+              <PrefillHint field="creditScore" />
               <div style={styles.helper}>
                 Any bureau works. Not sure? Just give your best guess.
               </div>
@@ -1022,6 +1101,7 @@ export default function RoguePrepForm() {
                 value={creditCardDebt}
                 onChange={(e) => setCreditCardDebt(e.target.value)}
               />
+              <PrefillHint field="creditCardDebt" />
               {errors.creditCardDebt ? (
                 <div style={styles.errText}>
                   Best guess is fine, but please don&apos;t leave this blank.
@@ -1045,6 +1125,7 @@ export default function RoguePrepForm() {
                 value={personalLoanDebt}
                 onChange={(e) => setPersonalLoanDebt(e.target.value)}
               />
+              <PrefillHint field="personalLoanDebt" />
             </div>
 
             <div style={styles.fieldBlock}>
@@ -1131,6 +1212,7 @@ export default function RoguePrepForm() {
                   value={retirement401k}
                   onChange={(e) => setRetirement401k(e.target.value)}
                 />
+                <PrefillHint field="retirement401k" />
                 {errors.retirement401k ? (
                   <div style={styles.errText}>
                     Best guess is fine, but please don&apos;t leave this blank.
@@ -1152,6 +1234,7 @@ export default function RoguePrepForm() {
                   value={homeEquity}
                   onChange={(e) => setHomeEquity(e.target.value)}
                 />
+                <PrefillHint field="homeEquity" />
                 {errors.homeEquity ? (
                   <div style={styles.errText}>
                     Best guess is fine, but please don&apos;t leave this blank.
@@ -1209,6 +1292,7 @@ export default function RoguePrepForm() {
                   value={savings}
                   onChange={(e) => setSavings(e.target.value)}
                 />
+                <PrefillHint field="savings" />
                 {errors.savings ? (
                   <div style={styles.errText}>
                     Best guess is fine, but please don&apos;t leave this blank.
@@ -1292,6 +1376,7 @@ export default function RoguePrepForm() {
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
+                <PrefillHint field="state" />
                 {errors.state ? (
                   <div style={styles.errText}>
                     Please select your state.
