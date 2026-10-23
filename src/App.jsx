@@ -55,6 +55,23 @@ const BREAKOUT_VIDEOS = [
   },
 ];
 
+// Client wins wall: Slack screenshots from the client channels, names blurred.
+// Picked 2026-10-19 from wins-web.zip (85 files, 34 leaked a name or face and
+// were dropped). Files in public/prep-assets/wins so the /prep proxy serves them.
+const WINS_TITLE = "From our client channel";
+const WINS_SUB = "Real messages from Rogue clients, as they posted them. Names blurred for privacy. Individual experiences, results vary.";
+const WINS = [
+  { file: "win-s04.webp", w: 900, h: 294, alt: "Client: my mind is freed from the lender, the system is in place and my wife is on board." },
+  { file: "win-s36.webp", w: 900, h: 400, alt: "Client: paid an $800 car repair without putting it on credit, and didn't panic." },
+  { file: "win-s92.webp", w: 646, h: 398, alt: "Client couple: just over $8,000 left across our accounts after the month's major bills." },
+  { file: "win-s58.webp", w: 900, h: 395, alt: "Client: I don't even remember when payday is now, and I spend on half the stuff I used to." },
+  { file: "win-s88.webp", w: 900, h: 859, alt: "Client: credit score up 75 points to 730, after dropping into the 500s a few months ago." },
+  { file: "win-s73.webp", w: 900, h: 194, alt: "Client: got everything automated and organized, so much relief." },
+  { file: "win-s74.webp", w: 900, h: 323, alt: "Client: started in debt with negative cash flow, now positive cash flow and three quarters of a month in savings." },
+  { file: "win-s90.webp", w: 900, h: 577, alt: "Client: husband's $900 bonus went automatically into savings." },
+  { file: "win-s78.webp", w: 900, h: 415, alt: "Client: slept well for the first time in so long after paying everything off or down." },
+];
+
 // Verbatim Trustpilot reviews, same six the GHL confirmation page shows first.
 const REVIEWS = [
   {
@@ -675,6 +692,29 @@ function RetirementSnapshot({ income, retirement }) {
   );
 }
 
+function WinsWall() {
+  return (
+    <div className="done-wins">
+      <h2 className="done-qs-title">{WINS_TITLE}</h2>
+      <p className="done-proof-sub">{WINS_SUB}</p>
+      <div className="done-wins-grid">
+        {WINS.map((w) => (
+          <div className="done-win" key={w.file}>
+            <img
+              src={`/prep-assets/wins/${w.file}`}
+              width={w.w}
+              height={w.h}
+              alt={w.alt}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // COMPONENT
 // =========================================================================
@@ -980,6 +1020,8 @@ export default function RoguePrepForm() {
             income={parseNumOrNull(annualHouseholdIncome)}
             retirement={parseNumOrNull(retirement401k)}
           />
+
+          <WinsWall />
 
           <div className="done-stats">
             <div className="done-stat">

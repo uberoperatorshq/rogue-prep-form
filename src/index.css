@@ -137,6 +137,13 @@ input[type="number"] {
 .done-snap-m { font-size: 13px; color: #888888; }
 .done-snap-note { font-size: 12px; line-height: 1.5; color: #777777; margin: 16px 0 0; }
 @media (max-width: 640px) { .done-snap-grid { grid-template-columns: 1fr; } .done-snap-v { font-size: 24px; } }
+.done-wins { text-align: center; padding-top: 40px; }
+.done-wins .done-qs-title { margin-bottom: 8px; }
+.done-wins-grid { column-count: 3; column-gap: 14px; text-align: left; }
+.done-win { break-inside: avoid; margin: 0 0 14px; background: #111111; border: 1px solid #222222; border-radius: 12px; overflow: hidden; }
+.done-win img { display: block; width: 100%; height: auto; }
+@media (max-width: 900px) { .done-wins-grid { column-count: 2; } }
+@media (max-width: 640px) { .done-wins-grid { column-count: 1; } }
 @media (max-width: 900px) { .done-reviews { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 900px) { .done-qs-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) {
