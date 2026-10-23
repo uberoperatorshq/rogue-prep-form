@@ -1,0 +1,477 @@
+{
+ "name": "[Rogue] Prep Form Submission \u2192 GHL Note + Post to Slack",
+ "nodes": [
+  {
+   "id": "wh-node-prep-form-001",
+   "name": "Prep Form Webhook",
+   "webhookId": "6b43cfbe-ff57-439a-8bbe-19969aba4cef",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    48,
+    368
+   ],
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "prep-form",
+    "options": {}
+   }
+  },
+  {
+   "id": "ghl-search-node-001",
+   "name": "Search GHL Contact",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    432,
+    368
+   ],
+   "parameters": {
+    "url": "https://services.leadconnectorhq.com/contacts/",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendQuery": true,
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "query",
+       "value": "={{ $('Prep Form Webhook').first().json.body.contact.email }}"
+      },
+      {
+       "name": "locationId",
+       "value": "S6ECFb1b1uhwdmdSwyyB"
+      }
+     ]
+    },
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Version",
+       "value": "2021-07-28"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "vZOWjNxRg6Hplal7",
+     "name": "GHL Rogue (PIT)"
+    }
+   }
+  },
+  {
+   "id": "if-contact-found-001",
+   "name": "Contact Found?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1460,
+    368
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": false,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 1
+     },
+     "conditions": [
+      {
+       "id": "has-contacts",
+       "leftValue": "={{ $json.contacts && $json.contacts.length > 0 }}",
+       "rightValue": true,
+       "operator": {
+        "type": "boolean",
+        "operation": "true"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   }
+  },
+  {
+   "id": "format-ghl-note-001",
+   "name": "Format GHL Note",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1844,
+    368
+   ],
+   "parameters": {
+    "jsCode": "const webhook = $('Prep Form Webhook').first().json.body || $('Prep Form Webhook').first().json || {};\nconst contact = webhook.contact || {};\n\nconst num = (v) => {\n  if (v === null || v === undefined || v === '') return null;\n  const n = parseFloat(v);\n  return Number.isFinite(n) ? n : null;\n};\n\nconst annualHouseholdIncome = num(webhook.annualHouseholdIncome);\nconst creditScore = num(webhook.creditScore);\nconst creditCardDebt = num(webhook.creditCardDebt);\nconst personalLoanDebt = num(webhook.personalLoanDebt);\nconst totalCreditLimit = num(webhook.totalCreditLimit);\nconst retirement401k = num(webhook.retirement401k);\nconst homeEquity = num(webhook.homeEquity);\nconst otherAssetsValue = num(webhook.otherAssetsValue);\nconst savings = num(webhook.savings);\nconst monthlyRentMortgage = num(webhook.monthlyRentMortgage);\nconst monthlyDebtPayments = num(webhook.monthlyDebtPayments);\nconst totalMonthlyExpenses = num(webhook.totalMonthlyExpenses);\n\nconst availableCredit = (totalCreditLimit !== null && creditCardDebt !== null)\n  ? (totalCreditLimit - creditCardDebt) : null;\nconst utilization = (totalCreditLimit !== null && totalCreditLimit > 0 && creditCardDebt !== null)\n  ? (creditCardDebt / totalCreditLimit) : null;\nconst pifPower = Math.max(0, availableCredit || 0) + Math.max(0, savings || 0);\nconst monthlyIncome = annualHouseholdIncome !== null ? (annualHouseholdIncome / 12) : null;\nconst monthlyCashflow = (monthlyIncome !== null && totalMonthlyExpenses !== null)\n  ? (monthlyIncome - totalMonthlyExpenses) : null;\n\nlet route;\nif (pifPower >= 15000) route = 'PIF (Pay In Full)';\nelse if (creditScore !== null && creditScore > 600 && utilization !== null && utilization <= 0.70) route = 'Payva Funding (likely accepted)';\nelse if (availableCredit !== null && availableCredit >= 6000) route = 'Split It';\nelse route = 'Payva Servicing';\n\nconst fmtMoney = (n) => (n === null || n === undefined) ? 'not provided' : ('$' + Math.round(Math.abs(n)).toLocaleString());\nconst fmtAvail = (n) => {\n  if (n === null || n === undefined) return 'not provided';\n  if (n < 0) return '-$' + Math.round(Math.abs(n)).toLocaleString() + ' (over limit)';\n  return '$' + Math.round(n).toLocaleString();\n};\nconst fmtPct = (n) => (n === null || n === undefined) ? 'n/a' : (Math.round(n * 100) + '%');\nconst fmtCashflow = (n) => {\n  if (n === null || n === undefined) return 'not enough info';\n  const s = n < 0 ? '-' : '+';\n  return s + '$' + Math.round(Math.abs(n)).toLocaleString();\n};\nconst fmtText = (v) => (!v || !String(v).trim()) ? 'not provided' : String(v).trim();\nconst fullName = fmtText(contact.fullName);\nconst email = fmtText(contact.email);\nconst stateStr = fmtText(webhook.state);\nconst debtNotes = (webhook.debtNotes && String(webhook.debtNotes).trim()) ? String(webhook.debtNotes).trim() : '';\nconst questions = (webhook.questions && String(webhook.questions).trim()) ? String(webhook.questions).trim() : '';\nconst otherAssetsNote = (webhook.otherAssetsNote && String(webhook.otherAssetsNote).trim()) ? String(webhook.otherAssetsNote).trim() : '';\n\n// --- You & money (mindset) fields; absent on pre-v2 form submissions ---\nconst bankCheckFrequency = (webhook.bankCheckFrequency && String(webhook.bankCheckFrequency).trim()) ? String(webhook.bankCheckFrequency).trim() : '';\nconst financialLiteracy = num(webhook.financialLiteracy);\nconst moneyRelationshipWord = (webhook.moneyRelationshipWord && String(webhook.moneyRelationshipWord).trim()) ? String(webhook.moneyRelationshipWord).trim() : '';\nconst financialFrustration = (webhook.financialFrustration && String(webhook.financialFrustration).trim()) ? String(webhook.financialFrustration).trim() : '';\nconst hasMindset = !!(bankCheckFrequency || financialLiteracy !== null || moneyRelationshipWord || financialFrustration);\n\n\n// --- Pre-fill check (2026-10-20): the form pre-fills the setter's numbers from a signed\n// link token; show the closer what the prospect changed. No token at all = no block.\nconst PREFILL_LABELS = {\n  annualHouseholdIncome: 'Income', creditScore: 'Credit score', creditCardDebt: 'Credit card debt',\n  personalLoanDebt: 'Personal loan debt', retirement401k: '401k / retirement', homeEquity: 'Home equity',\n  savings: 'Savings', state: 'State',\n};\nconst prefill = (webhook.prefill && typeof webhook.prefill === 'object') ? webhook.prefill : null;\nconst prefillLines = [];\nif (prefill && prefill.status === 'filled' && prefill.values && typeof prefill.values === 'object') {\n  const fmtField = (k, v) => {\n    if (v === null || v === undefined || v === '') return 'blank';\n    if (k === 'state') return String(v);\n    if (k === 'creditScore') return String(Math.round(Number(v)));\n    return fmtMoney(Number(v));\n  };\n  const changes = [];\n  let same = 0;\n  for (const k of Object.keys(PREFILL_LABELS)) {\n    if (!(k in prefill.values)) continue;\n    const before = prefill.values[k];\n    const after = webhook[k];\n    const equal = k === 'state'\n      ? String(before || '').trim() === String(after || '').trim()\n      : (num(after) !== null && Math.abs(num(after) - Number(before)) < 0.5);\n    if (equal) same++;\n    else changes.push(PREFILL_LABELS[k] + ': ' + fmtField(k, before) + ' -> ' + fmtField(k, after));\n  }\n  const who = prefill.setter ? (prefill.setter + \"'s call\") : 'the setter call';\n  if (changes.length) {\n    prefillLines.push('Changed since ' + who + ' (setter -> prospect):');\n    changes.forEach((c) => prefillLines.push('- ' + c));\n    if (same) prefillLines.push(same + ' other pre-filled number' + (same === 1 ? '' : 's') + ' confirmed.');\n  } else {\n    prefillLines.push('Confirmed the numbers from ' + who + ', no changes (' + same + ' pre-filled).');\n  }\n} else if (prefill && prefill.reason && prefill.reason !== 'no_token') {\n  prefillLines.push('Pre-fill: none (' + String(prefill.reason).slice(0, 40) + ')');\n}\n\nconst lines = [];\nlines.push('=== RECOMMENDED ROUTE ===');\nlines.push(route);\nlines.push('Program: $6,000');\nlines.push('');\nlines.push('=== Contact ===');\nlines.push('Full name: ' + fullName);\nlines.push('Email: ' + email);\nlines.push('State: ' + stateStr);\nlines.push('');\nif (prefillLines.length) {\n  lines.push('=== Setter Numbers Check ===');\n  prefillLines.forEach((l) => lines.push(l));\n  lines.push('');\n}\nif (hasMindset) {\n  lines.push('=== You & Money ===');\n  lines.push('Checks bank balance: ' + (bankCheckFrequency || 'not provided'));\n  lines.push('Financial literacy (self-rated): ' + (financialLiteracy !== null ? (financialLiteracy + '/10') : 'not provided'));\n  lines.push('Relationship with money: ' + (moneyRelationshipWord ? ('\"' + moneyRelationshipWord + '\"') : 'not provided'));\n  if (financialFrustration) lines.push('Biggest frustration: ' + financialFrustration);\n  lines.push('');\n}\nlines.push('=== Income & Cashflow ===');\nlines.push('Gross annual income (before tax): ' + fmtMoney(annualHouseholdIncome));\nlines.push('~ ' + fmtMoney(monthlyIncome) + ' /mo before tax');\nlines.push('Total monthly expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('Projected monthly cashflow: ' + fmtCashflow(monthlyCashflow) + ' /mo (approx, before tax)');\nlines.push('');\nlines.push('=== Credit ===');\nlines.push('Credit score: ' + (creditScore !== null ? String(creditScore) : 'not provided'));\nlines.push('Credit card debt: ' + fmtMoney(creditCardDebt));\nlines.push('Personal loan debt: ' + fmtMoney(personalLoanDebt));\nlines.push('Total credit limit: ' + fmtMoney(totalCreditLimit));\nlines.push('Available credit: ' + fmtAvail(availableCredit));\nlines.push('Utilization: ' + fmtPct(utilization));\nlines.push('');\nlines.push('=== Assets ===');\nlines.push('401k / retirement: ' + fmtMoney(retirement401k));\nlines.push('Home equity: ' + fmtMoney(homeEquity));\nlines.push('Other assets: ' + fmtMoney(otherAssetsValue) + (otherAssetsNote ? ' (' + otherAssetsNote + ')' : ''));\nlines.push('Savings: ' + fmtMoney(savings));\nlines.push('');\nlines.push('=== PIF Power ===');\nlines.push('$' + Math.round(pifPower).toLocaleString() + ' (max(0, available credit) + max(0, savings))');\nlines.push('');\nlines.push('=== Monthly Money ===');\nlines.push('Rent / mortgage: ' + fmtMoney(monthlyRentMortgage));\nlines.push('Debt payments: ' + fmtMoney(monthlyDebtPayments));\nlines.push('Total expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('');\nlines.push('=== Free text ===');\nlines.push('Debt notes: ' + (debtNotes || '(none)'));\nlines.push('Questions: ' + (questions || '(none)'));\n\nconst noteBody = lines.join('\\n');\nconst contactId = $('Resolve Contact').first().json.contacts[0].id;\nreturn [{ json: { contactId, noteBody, route } }];\n"
+   }
+  },
+  {
+   "id": "post-ghl-note-001",
+   "name": "Post GHL Note",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2228,
+    368
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}/notes",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Version",
+       "value": "2021-07-28"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ body: $json.noteBody }) }}",
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "vZOWjNxRg6Hplal7",
+     "name": "GHL Rogue (PIT)"
+    }
+   }
+  },
+  {
+   "id": "format-slack-msg-001",
+   "name": "Format Slack Message",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1460,
+    560
+   ],
+   "parameters": {
+    "jsCode": "const webhook = $('Prep Form Webhook').first().json.body || $('Prep Form Webhook').first().json || {};\nconst contact = webhook.contact || {};\n\nconst num = (v) => {\n  if (v === null || v === undefined || v === '') return null;\n  const n = parseFloat(v);\n  return Number.isFinite(n) ? n : null;\n};\n\nconst annualHouseholdIncome = num(webhook.annualHouseholdIncome);\nconst creditScore = num(webhook.creditScore);\nconst creditCardDebt = num(webhook.creditCardDebt);\nconst personalLoanDebt = num(webhook.personalLoanDebt);\nconst totalCreditLimit = num(webhook.totalCreditLimit);\nconst retirement401k = num(webhook.retirement401k);\nconst homeEquity = num(webhook.homeEquity);\nconst otherAssetsValue = num(webhook.otherAssetsValue);\nconst savings = num(webhook.savings);\nconst monthlyRentMortgage = num(webhook.monthlyRentMortgage);\nconst monthlyDebtPayments = num(webhook.monthlyDebtPayments);\nconst totalMonthlyExpenses = num(webhook.totalMonthlyExpenses);\n\nconst availableCredit = (totalCreditLimit !== null && creditCardDebt !== null)\n  ? (totalCreditLimit - creditCardDebt) : null;\nconst utilization = (totalCreditLimit !== null && totalCreditLimit > 0 && creditCardDebt !== null)\n  ? (creditCardDebt / totalCreditLimit) : null;\nconst pifPower = Math.max(0, availableCredit || 0) + Math.max(0, savings || 0);\nconst monthlyIncome = annualHouseholdIncome !== null ? (annualHouseholdIncome / 12) : null;\nconst monthlyCashflow = (monthlyIncome !== null && totalMonthlyExpenses !== null)\n  ? (monthlyIncome - totalMonthlyExpenses) : null;\n\nlet route;\nif (pifPower >= 15000) route = 'PIF (Pay In Full)';\nelse if (creditScore !== null && creditScore > 600 && utilization !== null && utilization <= 0.70) route = 'Payva Funding (likely accepted)';\nelse if (availableCredit !== null && availableCredit >= 6000) route = 'Split It';\nelse route = 'Payva Servicing';\n\nconst fmtMoney = (n) => (n === null || n === undefined) ? 'not provided' : ('$' + Math.round(Math.abs(n)).toLocaleString());\nconst fmtAvail = (n) => {\n  if (n === null || n === undefined) return 'not provided';\n  if (n < 0) return '-$' + Math.round(Math.abs(n)).toLocaleString() + ' (over limit)';\n  return '$' + Math.round(n).toLocaleString();\n};\nconst fmtPct = (n) => (n === null || n === undefined) ? 'n/a' : (Math.round(n * 100) + '%');\nconst fmtCashflow = (n) => {\n  if (n === null || n === undefined) return 'not enough info';\n  const s = n < 0 ? '-' : '+';\n  return s + '$' + Math.round(Math.abs(n)).toLocaleString();\n};\nconst fmtText = (v) => (!v || !String(v).trim()) ? 'not provided' : String(v).trim();\nconst fullName = fmtText(contact.fullName);\nconst email = fmtText(contact.email);\nconst stateStr = fmtText(webhook.state);\nconst debtNotes = (webhook.debtNotes && String(webhook.debtNotes).trim()) ? String(webhook.debtNotes).trim() : '';\nconst questions = (webhook.questions && String(webhook.questions).trim()) ? String(webhook.questions).trim() : '';\nconst otherAssetsNote = (webhook.otherAssetsNote && String(webhook.otherAssetsNote).trim()) ? String(webhook.otherAssetsNote).trim() : '';\n\n// --- You & money (mindset) fields; absent on pre-v2 form submissions ---\nconst bankCheckFrequency = (webhook.bankCheckFrequency && String(webhook.bankCheckFrequency).trim()) ? String(webhook.bankCheckFrequency).trim() : '';\nconst financialLiteracy = num(webhook.financialLiteracy);\nconst moneyRelationshipWord = (webhook.moneyRelationshipWord && String(webhook.moneyRelationshipWord).trim()) ? String(webhook.moneyRelationshipWord).trim() : '';\nconst financialFrustration = (webhook.financialFrustration && String(webhook.financialFrustration).trim()) ? String(webhook.financialFrustration).trim() : '';\nconst hasMindset = !!(bankCheckFrequency || financialLiteracy !== null || moneyRelationshipWord || financialFrustration);\n\n\n// Closer name -> Slack ID map. Keys are lowercase first names plus a few full-name aliases.\n// 'jay' is the canonical Rogue closer; 'jeronimo' kept as a legacy alias (same person, same Slack ID).\nconst nameToSlack = {\n  'andy': 'U056PV29SET',\n  'andy hoffman': 'U056PV29SET',\n  'jay': 'U09QT7K4QUA',\n  'jay knight': 'U09QT7K4QUA',\n  'jeronimo': 'U09QT7K4QUA',\n  'jeronimo caballero': 'U09QT7K4QUA',\n  'david': 'U0APE14AAHE',\n  'david tierbach': 'U0APE14AAHE',\n  'cameron': 'U0ANGA65L8M',\n  'cameron meadows': 'U0ANGA65L8M',\n  'james': 'U0A12KF6KBQ',\n  'essi': 'U0BMT7DAKC4',\n  'essi korpela': 'U0BMT7DAKC4'\n};\n\n// Resolve the closer value from wherever the form/webhook puts it. The prep form\n// has shipped it under several shapes; check them all so a single field rename\n// upstream never silently drops the tag again.\nconst closerRaw = (\n  contact.closer ||\n  contact.closerName ||\n  contact.closerFirstName ||\n  contact.closer_first_name ||\n  contact.closer_name ||\n  webhook.closer ||\n  webhook.closerName ||\n  webhook.closerFirstName ||\n  webhook.closer_first_name ||\n  webhook.closer_name ||\n  ''\n);\nconst closerStr = String(closerRaw || '').toLowerCase().trim();\nconst closerFirst = closerStr.split(/\\s+/)[0] || '';\n// Try full-name match first, then first-name match.\nlet slackId = nameToSlack[closerStr] || nameToSlack[closerFirst];\n// Fallback (2026-10-11): no closer in the link -> read the contact's closer appointment in GHL\n// (Get Closer Appts node) and map the assigned GHL user to Slack. Hand-sent bare links were\n// producing \"Closer: N/A\" on 1 in 5 posts.\nconst ghlUserToSlack = {\"drPV0GZ9kpW8as1sGFnF\": \"U056PV29SET\", \"E9ckUupG4C2II73EFbf0\": \"U0ANGA65L8M\", \"9FAkIgvSyNLYMq8CNsPA\": \"U0APE14AAHE\", \"XuYfk7iTmg3wo7TRVq3s\": \"U0BMT7DAKC4\", \"8W4Gb13Ko2ZeZnBKM1iu\": \"U0A12KF6KBQ\", \"4m7dtTUrDo8kIgOhAxaC\": \"U09QT7K4QUA\"};\nlet apptNote = '';\nif (!slackId) {\n  let events = [];\n  try { const r = $('Get Closer Appts').first().json || {}; events = Array.isArray(r.events) ? r.events : []; } catch (e) { events = []; }\n  const now = Date.now();\n  const isCloserAppt = (a) => /finance strategy session|follow-up call|closer/i.test(a.title || '')\n    && ['confirmed', 'showed', 'new'].includes(String(a.appointmentStatus || '').toLowerCase())\n    && !!ghlUserToSlack[a.assignedUserId];\n  const closerAppts = events.filter(isCloserAppt);\n  const t = (a) => new Date(a.startTime).getTime();\n  const upcoming = closerAppts.filter(a => t(a) >= now - 6 * 3600 * 1000).sort((a, b) => t(a) - t(b));\n  const past = closerAppts.filter(a => t(a) < now - 6 * 3600 * 1000).sort((a, b) => t(b) - t(a));\n  const pick = upcoming[0] || past[0];\n  if (pick) {\n    slackId = ghlUserToSlack[pick.assignedUserId];\n    apptNote = ' (from GHL appointment ' + String(pick.startTime).slice(0, 10) + ')';\n  }\n}\nconst closerMention = slackId\n  ? ('<@' + slackId + '>' + apptNote)\n  : (closerRaw ? String(closerRaw) : 'unresolved, <@U09JJ9DL40L> to sort');\n\n// Was the GHL contact found?\nconst searchResp = $('Resolve Contact').first().json || {};\nconst found = Array.isArray(searchResp.contacts) && searchResp.contacts.length > 0;\n\n// --- Pre-fill check (2026-10-20): the form pre-fills the setter's numbers from a signed\n// link token; show the closer what the prospect changed. No token at all = no block.\nconst PREFILL_LABELS = {\n  annualHouseholdIncome: 'Income', creditScore: 'Credit score', creditCardDebt: 'Credit card debt',\n  personalLoanDebt: 'Personal loan debt', retirement401k: '401k / retirement', homeEquity: 'Home equity',\n  savings: 'Savings', state: 'State',\n};\nconst prefill = (webhook.prefill && typeof webhook.prefill === 'object') ? webhook.prefill : null;\nconst prefillLines = [];\nif (prefill && prefill.status === 'filled' && prefill.values && typeof prefill.values === 'object') {\n  const fmtField = (k, v) => {\n    if (v === null || v === undefined || v === '') return 'blank';\n    if (k === 'state') return String(v);\n    if (k === 'creditScore') return String(Math.round(Number(v)));\n    return fmtMoney(Number(v));\n  };\n  const changes = [];\n  let same = 0;\n  for (const k of Object.keys(PREFILL_LABELS)) {\n    if (!(k in prefill.values)) continue;\n    const before = prefill.values[k];\n    const after = webhook[k];\n    const equal = k === 'state'\n      ? String(before || '').trim() === String(after || '').trim()\n      : (num(after) !== null && Math.abs(num(after) - Number(before)) < 0.5);\n    if (equal) same++;\n    else changes.push(PREFILL_LABELS[k] + ': ' + fmtField(k, before) + ' -> ' + fmtField(k, after));\n  }\n  const who = prefill.setter ? (prefill.setter + \"'s call\") : 'the setter call';\n  if (changes.length) {\n    prefillLines.push('Changed since ' + who + ' (setter -> prospect):');\n    changes.forEach((c) => prefillLines.push('- ' + c));\n    if (same) prefillLines.push(same + ' other pre-filled number' + (same === 1 ? '' : 's') + ' confirmed.');\n  } else {\n    prefillLines.push('Confirmed the numbers from ' + who + ', no changes (' + same + ' pre-filled).');\n  }\n} else if (prefill && prefill.reason && prefill.reason !== 'no_token') {\n  prefillLines.push('Pre-fill: none (' + String(prefill.reason).slice(0, 40) + ')');\n}\n\nconst lines = [];\nif (!found) {\n  lines.push('Prep form submitted but I couldn\\'t match this person in GHL.');\n  lines.push('Name: ' + fullName);\n  lines.push('Email: ' + email);\n  lines.push('<@U09JJ9DL40L> to sort.');\n  lines.push('');\n}\nlines.push('*Recommended route:* ' + route);\nlines.push('Program: $6,000');\nlines.push('');\nlines.push('*' + fullName + '*  |  ' + email + (stateStr !== 'not provided' ? ('  |  ' + stateStr) : ''));\nlines.push('Closer: ' + closerMention);\nlines.push('');\nif (prefillLines.length) {\n  lines.push('*Setter numbers check*');\n  prefillLines.forEach((l) => lines.push(l));\n  lines.push('');\n}\nif (hasMindset) {\n  lines.push('*You & money*');\n  lines.push('Checks bank balance: ' + (bankCheckFrequency || 'not provided'));\n  lines.push('Financial literacy (self-rated): ' + (financialLiteracy !== null ? (financialLiteracy + '/10') : 'not provided'));\n  lines.push('Relationship with money: ' + (moneyRelationshipWord ? ('\"' + moneyRelationshipWord + '\"') : 'not provided'));\n  if (financialFrustration) lines.push('Biggest frustration: ' + financialFrustration);\n  lines.push('');\n}\nlines.push('*Income & cashflow*');\nlines.push('Gross annual (before tax): ' + fmtMoney(annualHouseholdIncome));\nlines.push('~ ' + fmtMoney(monthlyIncome) + ' /mo before tax');\nlines.push('Total monthly expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('Projected monthly cashflow: ' + fmtCashflow(monthlyCashflow) + ' /mo (approx, before tax)');\nlines.push('');\nlines.push('*Credit*');\nlines.push('Credit score: ' + (creditScore !== null ? String(creditScore) : 'not provided'));\nlines.push('Credit card debt: ' + fmtMoney(creditCardDebt));\nlines.push('Personal loan debt: ' + fmtMoney(personalLoanDebt));\nlines.push('Total credit limit: ' + fmtMoney(totalCreditLimit));\nlines.push('Available credit: ' + fmtAvail(availableCredit));\nlines.push('Utilization: ' + fmtPct(utilization));\nlines.push('');\nlines.push('*Assets*');\nlines.push('401k / retirement: ' + fmtMoney(retirement401k));\nlines.push('Home equity: ' + fmtMoney(homeEquity));\nlines.push('Other assets: ' + fmtMoney(otherAssetsValue) + (otherAssetsNote ? ' (' + otherAssetsNote + ')' : ''));\nlines.push('Savings: ' + fmtMoney(savings));\nlines.push('');\nlines.push('*PIF power*: $' + Math.round(pifPower).toLocaleString() + ' (avail credit + savings, floor 0)');\nlines.push('');\nlines.push('*Monthly money*');\nlines.push('Rent / mortgage: ' + fmtMoney(monthlyRentMortgage));\nlines.push('Debt payments: ' + fmtMoney(monthlyDebtPayments));\nlines.push('Total expenses: ' + fmtMoney(totalMonthlyExpenses));\nif (debtNotes) {\n  lines.push('');\n  lines.push('*Debt notes*');\n  lines.push(debtNotes);\n}\nif (questions) {\n  lines.push('');\n  lines.push('*Questions*');\n  lines.push(questions);\n}\n\nreturn [{ json: { channel: 'C0AQU9CL3E2', text: lines.join('\\n'), route, ghlContactFound: found, closerResolved: closerMention } }];\n"
+   }
+  },
+  {
+   "id": "post-slack-001",
+   "name": "Post to Slack",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1844,
+    560
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://slack.com/api/chat.postMessage",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ channel: $json.channel, text: $json.text }) }}",
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VZfbMh63sNP2W0I9",
+     "name": "Slack Bot (Rogue Finance)"
+    }
+   }
+  },
+  {
+   "id": "put-ghl-custom-fields",
+   "name": "Update GHL Custom Fields",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "onError": "continueRegularOutput",
+   "position": [
+    1844,
+    768
+   ],
+   "parameters": {
+    "method": "PUT",
+    "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contacts[0].id }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Version",
+       "value": "2021-07-28"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ customFields: [...(($('Prep Form Webhook').first().json.body.savings && String($('Prep Form Webhook').first().json.body.savings).trim()) ? [{key:'savings', field_value: String($('Prep Form Webhook').first().json.body.savings)}] : []), ...(($('Prep Form Webhook').first().json.body.state && String($('Prep Form Webhook').first().json.body.state).trim()) ? [{key:'state_', field_value: String($('Prep Form Webhook').first().json.body.state)}] : [])] }) }}",
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "vZOWjNxRg6Hplal7",
+     "name": "GHL Rogue (PIT)"
+    }
+   }
+  },
+  {
+   "id": "841e26a5-8e60-4adf-b247-a9f0f6e26eb8",
+   "name": "Section 1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    32,
+    128
+   ],
+   "parameters": {
+    "content": "## Intake & Lookup\nReceives the prep-form submission webhook and searches for the matching GHL contact.",
+    "height": 480,
+    "width": 720
+   }
+  },
+  {
+   "id": "9adb97af-ca42-4e31-8664-1f2ab75bb1eb",
+   "name": "Section 2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1444,
+    128
+   ],
+   "parameters": {
+    "content": "## Format, Write & Post\nOn contact found, formats the Slack message and GHL note, updates custom fields, posts to Slack, and writes the note to the GHL contact.",
+    "height": 880,
+    "width": 1100
+   }
+  },
+  {
+   "id": "f3c1910e-ea9f-4fcf-b1d3-b75d0c93d81f",
+   "name": "Get Closer Appts",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput",
+   "position": [
+    1276,
+    560
+   ],
+   "parameters": {
+    "url": "=https://services.leadconnectorhq.com/contacts/{{ (($('Resolve Contact').first().json.contacts || [])[0] || {}).id || 'no-contact' }}/appointments",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Version",
+       "value": "2021-07-28"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "vZOWjNxRg6Hplal7",
+     "name": "GHL Rogue (PIT)"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "jsCode": "// 2026-10-22: the prep form sends its signed pre-fill token (?t=). A valid signature names the\n// GHL contact for certain, so Resolve Contact can trust it over the typed email.\n// Expiry is not checked on purpose: here the token only identifies the person, it unlocks no data.\n// Fails open: any problem = no token contact, and the flow matches by email as before.\nconst out = (status, contactId = '') => [{ json: { tokenStatus: status, tokenContactId: contactId } }];\ntry {\n  const body = $('Prep Form Webhook').first().json.body || {};\n  const t = typeof body.token === 'string' ? body.token.trim() : '';\n  if (!t) return out('no_token');\n  const m = /^([A-Za-z0-9_-]{10,600})\\.([a-f0-9]{64})$/.exec(t);\n  if (!m) return out('bad_token');\n  const secret = $vars.PREP_PREFILL_SECRET;\n  if (!secret) return out('no_secret');\n  const crypto = require('crypto');\n  const expected = crypto.createHmac('sha256', secret).update(m[1]).digest('hex');\n  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(m[2]))) return out('bad_sig');\n  const claims = JSON.parse(Buffer.from(m[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));\n  const c = String((claims && claims.c) || '');\n  if (!/^[A-Za-z0-9]{15,40}$/.test(c)) return out('no_contact');\n  return out('ok', c);\n} catch (e) {\n  return out('error');\n}\n"
+   },
+   "name": "Check Prep Token",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    652,
+    368
+   ],
+   "id": "b1f0c0de-0001-4a7e-9c11-prep0token01"
+  },
+  {
+   "parameters": {
+    "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.tokenContactId || 'no-token' }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Version",
+       "value": "2021-07-28"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 5000
+    }
+   },
+   "name": "Get Token Contact",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    872,
+    368
+   ],
+   "id": "b1f0c0de-0002-4a7e-9c11-prep0token02",
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "vZOWjNxRg6Hplal7",
+     "name": "GHL Rogue (PIT)"
+    }
+   },
+   "onError": "continueRegularOutput",
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Picks the contact the rest of the flow uses: the signed-link contact first, else the email\n// search. Output keeps the Search GHL Contact shape ({contacts: [...]}) so downstream reads stay the same.\nconst ROGUE_LOC = 'S6ECFb1b1uhwdmdSwyyB';\nconst emailResp = $('Search GHL Contact').first().json || {};\nconst emailContacts = Array.isArray(emailResp.contacts) ? emailResp.contacts : [];\nconst tok = $('Check Prep Token').first().json || {};\nlet tokenContact = null;\nif (tok.tokenStatus === 'ok') {\n  const c = ($input.first().json || {}).contact;\n  if (c && c.id === tok.tokenContactId && c.locationId === ROGUE_LOC) tokenContact = c;\n}\nreturn [{ json: {\n  contacts: tokenContact ? [tokenContact] : emailContacts,\n  matchedBy: tokenContact ? 'token' : (emailContacts.length ? 'email' : 'none'),\n  tokenStatus: tok.tokenStatus || '',\n  emailMatchId: (emailContacts[0] || {}).id || '',\n} }];\n"
+   },
+   "name": "Resolve Contact",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1092,
+    368
+   ],
+   "id": "b1f0c0de-0003-4a7e-9c11-prep0token03"
+  }
+ ],
+ "connections": {
+  "Prep Form Webhook": {
+   "main": [
+    [
+     {
+      "node": "Search GHL Contact",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Search GHL Contact": {
+   "main": [
+    [
+     {
+      "node": "Check Prep Token",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Contact Found?": {
+   "main": [
+    [
+     {
+      "node": "Format GHL Note",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Update GHL Custom Fields",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Format GHL Note": {
+   "main": [
+    [
+     {
+      "node": "Post GHL Note",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Format Slack Message": {
+   "main": [
+    [
+     {
+      "node": "Post to Slack",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Closer Appts": {
+   "main": [
+    [
+     {
+      "node": "Format Slack Message",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Check Prep Token": {
+   "main": [
+    [
+     {
+      "node": "Get Token Contact",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Token Contact": {
+   "main": [
+    [
+     {
+      "node": "Resolve Contact",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Resolve Contact": {
+   "main": [
+    [
+     {
+      "node": "Contact Found?",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Get Closer Appts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "callerPolicy": "workflowsFromSameOwner",
+  "availableInMCP": true,
+  "errorWorkflow": "OcjkKIHRrz55BF8r",
+  "binaryMode": "separate"
+ }
+}
