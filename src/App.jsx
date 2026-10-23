@@ -94,6 +94,9 @@ const WEBHOOK_URL = import.meta.env.VITE_SUBMIT_URL || "https://uberops.app.n8n.
 // Pre-fill: the closer booking link carries a signed token (?t=). This returns the
 // setter's numbers for the contact; anything else and the form stays blank.
 const PREFILL_URL = import.meta.env.VITE_PREFILL_URL || "https://uberops.app.n8n.cloud/webhook/prep-prefill";
+// Results link (2026-10-23): submit saves the answers in Supabase under a random id; the
+// ?view=complete&r=<id> link asks this for the few values the completion page shows.
+const RESULTS_URL = import.meta.env.VITE_RESULTS_URL || "https://uberops.app.n8n.cloud/webhook/prep-results";
 
 // =========================================================================
 // THEME TOKENS  (kept consistent with the existing live form)
@@ -490,6 +493,13 @@ function looksLikeEmail(v) {
   return typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
+// 128 random bits, base64url (22 chars). Only the id goes in the link, never a number.
+function newResultsId() {
+  const bytes = new Uint8Array(16);
+  window.crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 // Tag Wistia plays with the prospect's email so stats name the viewer.
 // No valid email = untagged player, same as before.
 function withViewer(url, email) {
@@ -703,13 +713,16 @@ export default function RoguePrepForm() {
   const paramEmail = (params.get("email") || "").trim();
   const paramCloser = (params.get("closer") || "").trim();
   const paramToken = (params.get("t") || "").trim();
+  const paramResults = (params.get("r") || "").trim();
+  // One id per page load, so a re-submit after a timeout updates the same saved row.
+  const [resultsId] = useState(() => (typeof window !== "undefined" ? newResultsId() : ""));
 
   // ---------------- identity (intro) ----------------
   const [fullName, setFullName] = useState(paramName || "");
   const [email, setEmail] = useState(
     looksLikeEmail(paramEmail) ? paramEmail.trim() : ""
   );
-  const closerName = paramCloser;
+  const [closerName, setCloserName] = useState(paramCloser);
 
   // ---------------- Step 1: Income ----------------
   const [annualHouseholdIncome, setAnnualHouseholdIncome] = useState("");
@@ -797,6 +810,37 @@ export default function RoguePrepForm() {
     };
   }, [paramToken]);
 
+  // ---------------- Results link (?view=complete&r=<id>) ----------------
+  // Loads the saved answers so the snapshot shows again on any device. Bad, expired or
+  // slow id = the generic completion page, same as before.
+  useEffect(() => {
+    if (!paramResults || step !== 5) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    fetch(RESULTS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ r: paramResults }),
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!j || !j.ok) return;
+        if (j.annualHouseholdIncome != null) setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
+        if (j.retirement401k != null) setRetirement401k(String(j.retirement401k));
+        if (j.closer && !paramCloser) setCloserName(String(j.closer));
+        if (looksLikeEmail(j.email)) setEmail(j.email.trim());
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timeoutId));
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+    // Runs once for the link's id; step only matters on first render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramResults]);
+
   function PrefillHint({ field }) {
     if (prefill.status !== "filled" || !(field in prefill.values)) return null;
     const who = prefill.setter ? `your call with ${prefill.setter}` : "your call with our team";
@@ -873,6 +917,7 @@ export default function RoguePrepForm() {
     setSubmitError(null);
 
     const payload = {
+      resultsId,
       contact: {
         fullName: fullName.trim(),
         email: email.trim(),
@@ -923,6 +968,11 @@ export default function RoguePrepForm() {
       });
       // Webhook accepted the POST (any non-throwing response). Advance.
       saveViewer(email);
+      // Swap the booking link (name, email, token) for the results link, so a refresh or a
+      // bookmark reopens this page with the snapshot.
+      try {
+        window.history.replaceState(null, "", window.location.pathname + "?view=complete&r=" + resultsId);
+      } catch (e) {}
       setStep(5);
     } catch (err) {
       // AbortError = our timeout fired. Other errors = network / DNS / CORS.
