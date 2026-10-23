@@ -612,10 +612,13 @@ function shortMoney(n) {
   return "$" + Math.round(a);
 }
 
-function RetirementSnapshot({ income, retirement }) {
+// knownAge (2026-10-23): the setter's age from the pre-fill or the results link. When it is
+// there the age box is hidden; the box is only the fallback for prospects with no setter age.
+function RetirementSnapshot({ income, retirement, knownAge }) {
   const [ageInput, setAgeInput] = useState("");
   if (!income || income <= 0) return null;
-  const age = parseInt(ageInput, 10);
+  const hasKnownAge = Number.isInteger(knownAge) && knownAge >= 18 && knownAge <= 100;
+  const age = hasKnownAge ? knownAge : parseInt(ageInput, 10);
   const ageOk = Number.isFinite(age) && age >= 18 && age <= 100;
   const have = retirement && retirement > 0 ? retirement : 0;
   let snap = null;
@@ -635,22 +638,25 @@ function RetirementSnapshot({ income, retirement }) {
     <div className="done-snap">
       <h2 className="done-qs-title">How your retirement savings compare</h2>
       <p className="done-proof-sub">
-        A rough check against a common savings-by-age benchmark. Enter your age to see it.
+        A rough check against a common savings-by-age benchmark.
+        {hasKnownAge ? "" : " Enter your age to see it."}
       </p>
       <div className="done-snap-card">
-        <label className="done-snap-age">
-          <span>Your age</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min="18"
-            max="100"
-            placeholder="e.g. 42"
-            value={ageInput}
-            onWheel={(e) => e.currentTarget.blur()}
-            onChange={(e) => setAgeInput(e.target.value)}
-          />
-        </label>
+        {hasKnownAge ? null : (
+          <label className="done-snap-age">
+            <span>Your age</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="18"
+              max="100"
+              placeholder="e.g. 42"
+              value={ageInput}
+              onWheel={(e) => e.currentTarget.blur()}
+              onChange={(e) => setAgeInput(e.target.value)}
+            />
+          </label>
+        )}
         {snap ? (
           <div className="done-snap-grid">
             <div className="done-snap-cell">
@@ -761,7 +767,10 @@ export default function RoguePrepForm() {
     setter: "",
     submittedAt: null,
     values: {},
+    age: null,
   });
+  // Age from a results link (setter age saved at submit). Never asked on the form.
+  const [savedAge, setSavedAge] = useState(null);
 
   useEffect(() => {
     if (!paramToken) return;
@@ -798,6 +807,7 @@ export default function RoguePrepForm() {
           setter: j.setter || "",
           submittedAt: j.submittedAt || null,
           values: v,
+          age: Number.isInteger(j.age) ? j.age : null,
         });
       })
       .catch((err) => {
@@ -828,6 +838,7 @@ export default function RoguePrepForm() {
         if (!j || !j.ok) return;
         if (j.annualHouseholdIncome != null) setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
         if (j.retirement401k != null) setRetirement401k(String(j.retirement401k));
+        if (Number.isInteger(j.age)) setSavedAge(j.age);
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
         if (looksLikeEmail(j.email)) setEmail(j.email.trim());
       })
@@ -943,6 +954,10 @@ export default function RoguePrepForm() {
       moneyRelationshipWord: moneyRelationshipWord.trim(),
       financialFrustration: financialFrustration.trim(),
       questions: questions.trim(),
+      // Setter's age (2026-10-23), for the GHL note and the results link. Null when the setter
+      // call had none; the completion page then asks for it, but that answer is not sent.
+      age: prefill.age,
+      ageSource: prefill.age ? "setter" : null,
       prefill: {
         status: prefill.status,
         reason: prefill.reason === "pending" ? "timeout" : prefill.reason,
@@ -1029,6 +1044,7 @@ export default function RoguePrepForm() {
           <RetirementSnapshot
             income={parseNumOrNull(annualHouseholdIncome)}
             retirement={parseNumOrNull(retirement401k)}
+            knownAge={prefill.age || savedAge}
           />
 
           <div className="done-stats">

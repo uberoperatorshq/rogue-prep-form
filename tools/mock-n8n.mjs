@@ -41,9 +41,18 @@ http
           retirement401k: s.retirement401k,
           closer: s.contact && s.contact.closer,
           email: s.contact && s.contact.email,
+          age: s.age ?? null,
+          ageSource: s.ageSource ?? null,
         });
       }
-      if (req.url === "/prep-prefill") return send(res, 200, { ok: false, reason: "no_token" });
+      // Any ?t= value counts as a valid token here: returns a setter call with age 44.
+      if (req.url === "/prep-prefill") {
+        if (!body.t) return send(res, 200, { ok: false, reason: "no_token" });
+        return send(res, 200, {
+          ok: true, setter: "Andy", submittedAt: new Date().toISOString(), age: 44,
+          values: { annualHouseholdIncome: 120000, retirement401k: 90000, state: "Texas" },
+        });
+      }
       send(res, 404, { ok: false });
     });
   })
