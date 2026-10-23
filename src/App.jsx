@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // =========================================================================
 // CONFIG
@@ -851,6 +851,16 @@ export default function RoguePrepForm() {
     // Runs once for the link's id; step only matters on first render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramResults]);
+
+  // Each new step (and the completion page) opens at the top, not where Continue was clicked.
+  const firstStepRender = useRef(true);
+  useEffect(() => {
+    if (firstStepRender.current) {
+      firstStepRender.current = false;
+      return;
+    }
+    window.scrollTo(0, 0);
+  }, [step]);
 
   function PrefillHint({ field }) {
     if (prefill.status !== "filled" || !(field in prefill.values)) return null;
