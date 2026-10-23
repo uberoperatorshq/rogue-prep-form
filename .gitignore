@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# local mock server output
+tools/mock_submits.jsonl
