@@ -288,4 +288,21 @@ summary.parser_check = parserCheck;
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, "rows.json"), JSON.stringify(rows, null, 1));
 fs.writeFileSync(path.join(OUT, "summary.json"), JSON.stringify(summary, null, 2));
+
+// Write step: one SQL file pasted into the Supabase SQL editor. Re-running it inserts nothing new
+// (unique source + source_ref, migration 0002). Dollar-quoted JSON so no value can break the SQL.
+const tag = "pb" + crypto.randomBytes(6).toString("hex");
+const lit = (v) => (v == null ? "null" : `$${tag}$${String(v)}$${tag}$`);
+const values = rows.map((r) =>
+  `(${lit(r.id)}, ${lit(r.ghl_contact_id)}, ${lit(r.email)}, ${lit(r.closer)}, ${lit(JSON.stringify(r.answers))}::jsonb, ` +
+  `${lit(r.source)}, ${lit(r.source_ref)}, ${lit(r.submitted_at)}::timestamptz, ${lit(r.expires_at)}::timestamptz)`
+);
+fs.writeFileSync(
+  path.join(OUT, "insert.sql"),
+  "-- prep_results backfill, generated " + new Date().toISOString() + " (" + rows.length + " rows)\n" +
+    "insert into public.prep_results (id, ghl_contact_id, email, closer, answers, source, source_ref, submitted_at, expires_at) values\n" +
+    values.join(",\n") +
+    "\non conflict (source, source_ref) do nothing;\n\n" +
+    "select source, count(*) as rows, count(ghl_contact_id) as with_contact_id from public.prep_results group by source order by source;\n"
+);
 console.log(JSON.stringify(summary, null, 2));
