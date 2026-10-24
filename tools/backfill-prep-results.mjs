@@ -31,12 +31,23 @@ const TEST_EMAILS = [
   "paddydhennessy@gmail.com", "patrick@roguefinance.us", "patrick@uberoperators.com", "patricktest@gmail.com",
   "test@test.com",
 ];
-const isTestEmail = (e) => TEST_EMAILS.includes(String(e || "").trim().toLowerCase().replace(/\+[^@]*@/, "@"));
-// Slack user id -> closer first name (reverse of the receiver's Format Slack Message map).
+// Backfill only (Patrick, Oct 23): early test submissions with throwaway emails.
+const BACKFILL_SKIP_EMAILS = ["test@example.com", "thrjshsjsnen@gmail.com"];
+const normEmail = (e) => String(e || "").trim().toLowerCase().replace(/\+[^@]*@/, "@");
+// example.com is reserved for tests (incl. the GHL test contact diagnostic-test-tags@example.com).
+const isTestEmail = (e) =>
+  TEST_EMAILS.includes(normEmail(e)) || BACKFILL_SKIP_EMAILS.includes(normEmail(e)) || /@example\.com$/.test(normEmail(e));
+// Slack user id -> closer first name (reverse of the receiver's Format Slack Message map), plus
+// two retired accounts (Patrick, Oct 23): Jay's old second account and the James persona account.
 const SLACK_CLOSERS = {
   U056PV29SET: "Andy", U09QT7K4QUA: "Jay", U0APE14AAHE: "David",
   U0ANGA65L8M: "Cameron", U0A12KF6KBQ: "James", U0BMT7DAKC4: "Essi",
+  U0BCYSH1PLJ: "Jay", U0ASHAE53P1: "James",
 };
+const unmappedCloserIds = {};
+const v1IncomeSuspect = { dot_thousands: 0, under_100_per_month: 0 };
+// Same prospect posted again within this window = one submission (Oct 22 outage reposts).
+const DEDUPE_MINUTES = 10;
 const DAY = 864e5;
 const newId = () => crypto.randomBytes(16).toString("base64url");
 
@@ -91,9 +102,13 @@ function contactLine(t) {
 }
 function closerOf(t) {
   const raw = line(t, "Closer");
-  if (!raw) return null;
+  // "unresolved, <@U09JJ9DL40L> to sort" tags the person who sorts it out, not a closer.
+  if (!raw || /unresolved/i.test(raw)) return null;
   const id = /<@([A-Z0-9]+)>/.exec(raw);
-  if (id) return SLACK_CLOSERS[id[1]] || null;
+  if (id) {
+    if (!SLACK_CLOSERS[id[1]]) unmappedCloserIds[id[1]] = (unmappedCloserIds[id[1]] || 0) + 1;
+    return SLACK_CLOSERS[id[1]] || null;
+  }
   return /unresolved|N\/A/i.test(raw) ? null : raw.split(/\s+\(/)[0].trim() || null;
 }
 
@@ -136,9 +151,16 @@ function parseV1(t) {
   const assets = block(t, "Assets");
   const k401 = /401k[^:]*:\s*(.*)$/im.exec(assets);
   const detail = block(t, "Credit & Debt Detail");
+  // The old form asked MONTHLY household income ("$X/mo"), so it is x12 here. A dot used as a
+  // thousands separator, or under $100 a month, is not trusted: income stays empty.
+  const incomeRaw = line(t, "Total Household Income") || "";
+  let monthly = money(incomeRaw);
+  if (/\d\.\d{3}(?!\d)/.test(incomeRaw)) { v1IncomeSuspect.dot_thousands++; monthly = null; }
+  else if (monthly != null && monthly < 100) { v1IncomeSuspect.under_100_per_month++; monthly = null; }
   return {
     contact: { fullName: c.fullName, email: c.email, closer: closerOf(t) },
-    annualHouseholdIncome: money(line(t, "Total Household Income")),
+    annualHouseholdIncome: monthly == null ? null : Math.round(monthly * 12),
+    monthlyHouseholdIncomeV1: monthly,
     creditScore: money(line(t, "Credit Score")),
     retirement401k: k401 ? money(k401[1]) : null,
     monthlyRentMortgage: money(line(t, "Monthly Rent/Mortgage")),
@@ -167,7 +189,8 @@ function slackPosts(file) {
       if (!v1 && !v2) return null;
       return { ts: m.ts, at: new Date(parseFloat(m.ts) * 1000), format: v2 ? "v2" : "v1", answers: v2 ? parseV2(t) : parseV1(t) };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((a, b) => a.at - b.at); // Slack returns newest first; oldest first keeps the original post
 }
 
 // ---------- build rows ----------
@@ -188,7 +211,7 @@ function row({ source, ref, at, answers, contactId }) {
 
 const runs = await n8nRuns();
 const posts = slackPosts(SLACK_FILE);
-const skipped = { test_email: 0, saved_live: 0, slack_dup_of_n8n: 0, unparsed: 0, no_email: 0 };
+const skipped = { test_email: 0, saved_live: 0, slack_dup_of_n8n: 0, slack_repost_of_n8n: 0, slack_repost_same_email: 0, unparsed: 0, no_email: 0 };
 const rows = [];
 const n8nSlackTs = new Set();
 
@@ -199,11 +222,22 @@ for (const r of runs) {
   const t = Date.parse(r.body.submittedAt);
   rows.push(row({ source: "backfill_n8n", ref: r.execId, at: new Date(Number.isFinite(t) ? t : r.startedAt), answers: r.body, contactId: r.contactId }));
 }
+const n8nByEmail = runs.map((r) => ({ email: normEmail(r.body.contact?.email), at: Date.parse(r.startedAt) }));
 for (const p of posts) {
   if (n8nSlackTs.has(p.ts)) { skipped.slack_dup_of_n8n++; continue; }
+  const pe = normEmail(p.answers?.contact?.email);
+  if (pe && n8nByEmail.some((r) => r.email === pe && Math.abs(r.at - p.at.getTime()) <= DEDUPE_MINUTES * 60e3)) {
+    skipped.slack_repost_of_n8n++;
+    continue;
+  }
   if (!p.answers) { skipped.unparsed++; continue; }
   if (!p.answers.contact.email) { skipped.no_email++; continue; }
   if (isTestEmail(p.answers.contact.email)) { skipped.test_email++; continue; }
+  // Slack-only reposts of the same submission (no n8n run left): keep the first post.
+  if (rows.some((r) => r.source === "backfill_slack" && r.email === pe && Math.abs(Date.parse(r.submitted_at) - p.at.getTime()) <= DEDUPE_MINUTES * 60e3)) {
+    skipped.slack_repost_same_email++;
+    continue;
+  }
   rows.push(row({ source: "backfill_slack", ref: p.ts, at: p.at, answers: p.answers }));
 }
 
@@ -220,6 +254,8 @@ const summary = {
   looks_like_test_not_on_list: looksTest,
   date_range: rows.length ? [rows.map((r) => r.submitted_at).sort()[0].slice(0, 10), rows.map((r) => r.submitted_at).sort().at(-1).slice(0, 10)] : null,
   still_linkable_30d: rows.filter((r) => Date.parse(r.expires_at) > Date.now()).length,
+  unmapped_closer_ids: unmappedCloserIds,
+  v1_income_suspect: v1IncomeSuspect,
 };
 // Parser check: submissions in both n8n (raw) and Slack (parsed), compared field by field.
 const CHECK_FIELDS = [
