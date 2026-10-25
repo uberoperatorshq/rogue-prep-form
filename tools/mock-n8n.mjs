@@ -28,7 +28,7 @@ http
       try { body = JSON.parse(raw || "{}"); } catch { return send(res, 400, { ok: false }); }
       if (req.url === "/prep-form") {
         if (body.resultsId) saved.set(body.resultsId, body);
-        console.log("prep-form", body.resultsId, JSON.stringify(body).length, "bytes");
+        console.log("prep-form", body.resultsId, JSON.stringify(body).length, "bytes", "token:", body.token ? "yes" : "no");
         return send(res, 200, { message: "Workflow got started." });
       }
       if (req.url === "/prep-results") {
