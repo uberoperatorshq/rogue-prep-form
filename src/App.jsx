@@ -998,8 +998,8 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
 }
 
 // "Is someone else joining you on this call?" Shares the results link (no numbers in the link
-// itself; it opens them, so whoever gets it sees them). Phone share sheet when the browser has
-// one, plus WhatsApp, iMessage/SMS and copy.
+// itself; it opens them, so whoever gets it sees them). "Share" opens the device's own share
+// sheet (WhatsApp, iMessage and the rest live there) where the browser has one; Copy link always.
 function ShareResults({ link, closerName }) {
   const [copied, setCopied] = useState(false);
   const text =
@@ -1032,13 +1032,7 @@ function ShareResults({ link, closerName }) {
             Share
           </button>
         ) : null}
-        <a className="done-share-btn" href={"https://wa.me/?text=" + encodeURIComponent(text)} target="_blank" rel="noreferrer">
-          WhatsApp
-        </a>
-        <a className="done-share-btn" href={"sms:?&body=" + encodeURIComponent(text)}>
-          iMessage / text
-        </a>
-        <button type="button" className="done-share-btn" onClick={copy}>
+        <button type="button" className={"done-share-btn" + (canShare ? "" : " done-share-main")} onClick={copy}>
           {copied ? "Link copied" : "Copy link"}
         </button>
       </div>
