@@ -29,7 +29,7 @@ const TRAINING_CHAPTERS = [
 // coaching, affording it (moved up 2026-10-03, best completion rate); bottom
 // row partner, debt, deciding. Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
-// Run times from Wistia (2026-10-25), 10:36 in total. Stills = each media's custom thumbnail.
+// Run times from Wistia (2026-10-25), rounded to the nearest second like the Wistia player shows them; 10:36 in total. Stills = each media's custom thumbnail.
 const BREAKOUT_SUB = "Six short answers from Andy. All six run under 11 minutes.";
 const PARTNER_VIDEO_ID = "ywdmppplme";
 const WISTIA_STILL = "https://embed-ssl.wistia.com/deliveries/";
@@ -43,21 +43,21 @@ const BREAKOUT_VIDEOS = [
   },
   {
     id: "p25usn12bi",
-    len: "2:12",
+    len: "2:13",
     still: "d9f783991b8433dd77cd866e6db7c8e5",
     q: "Would you be coaching me personally?",
     a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
   },
   {
     id: "ncze2s7sqh",
-    len: "1:54",
+    len: "1:55",
     still: "9a962b60838645f3ab609ec6c4c55f7e",
     q: "What if I can't afford this right now?",
     a: "Don't do the math against today's balance. What standing still costs, in interest.",
   },
   {
     id: "ywdmppplme",
-    len: "1:05",
+    len: "1:06",
     still: "169985d1352f3993adabbb08dc29d797",
     q: "What if I want to do this without my partner?",
     a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
@@ -71,7 +71,7 @@ const BREAKOUT_VIDEOS = [
   },
   {
     id: "w9d1mfco1k",
-    len: "3:08",
+    len: "3:09",
     still: "883b88b099b8ee185fdbb0db11ed5da3",
     q: "Do I have to decide on the call?",
     a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
