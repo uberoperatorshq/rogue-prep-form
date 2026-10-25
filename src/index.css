@@ -118,19 +118,6 @@ input[type="number"] {
 .done-snap-note { font-size: 12px; line-height: 1.5; color: #777777; margin: 16px 0 0; }
 @media (max-width: 640px) { .done-snap-grid { grid-template-columns: 1fr; } .done-snap-v { font-size: 24px; } }
 /* Completion screen revamp (Oct 20 plan, built 2026-10-25) */
-.done-todo { max-width: 620px; margin: 0 auto 28px; display: grid; gap: 10px; }
-.done-todo-item {
-  display: block; width: 100%; text-align: left; cursor: pointer; position: relative;
-  background: #111111; border: 1px solid #222222; border-radius: 10px;
-  padding: 12px 14px 12px 44px; font: inherit; font-size: 14.5px; line-height: 1.5; color: #999999;
-}
-.done-todo-item::before {
-  content: ""; position: absolute; left: 14px; top: 14px; width: 18px; height: 18px;
-  border: 2px solid #e8392a; border-radius: 4px;
-}
-.done-todo-item:hover { border-color: #333333; }
-.done-todo-item b { display: block; color: #ffffff; font-weight: 700; font-size: 15.5px; }
-.done-todo-link { color: #e8392a; font-weight: 600; }
 .done-chapters { list-style: none; padding: 0; margin: 16px auto 0; max-width: 640px; text-align: left; display: grid; gap: 2px; }
 .done-chapters button {
   display: grid; grid-template-columns: 54px 1fr; gap: 8px; width: 100%; text-align: left; cursor: pointer;
@@ -182,7 +169,9 @@ input[type="number"] {
 }
 .done-share-btn:hover { border-color: #555555; }
 .done-share-main { background: #e8392a; border-color: #e8392a; }
-.done-todo { margin-top: 28px; }
+.done-results { text-align: center; padding-top: 48px; }
+.done-results-title { font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif; font-size: clamp(30px, 4vw, 44px); font-weight: 900; text-transform: uppercase; line-height: 1.05; color: #ffffff; margin: 0 0 8px; }
+.done-results .done-snap { padding-top: 24px; }
 @media (max-width: 900px) { .done-reviews { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 900px) { .done-qs-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) {

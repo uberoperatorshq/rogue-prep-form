@@ -866,7 +866,10 @@ function ShareResults({ link, closerName }) {
   return (
     <div className="done-share">
       <h2 className="done-share-title">Is someone else joining you on this call?</h2>
-      <p className="done-share-body">Send them your results so they see the same numbers before you talk.</p>
+      <p className="done-share-body">
+        If you share money with a partner, they join the call too. Send them your results so they see the same
+        numbers before you talk.
+      </p>
       <div className="done-share-btns">
         {canShare ? (
           <button
@@ -1243,10 +1246,6 @@ export default function RoguePrepForm() {
       setTrainingStart(t);
       jumpTo("training");
     };
-    const openPartner = () => {
-      setOpenBreakout(PARTNER_VIDEO_ID);
-      jumpTo("breakout-" + PARTNER_VIDEO_ID);
-    };
     const income = parseNumOrNull(annualHouseholdIncome);
     const sharedId = paramResults || resultsId;
     const shareLink =
@@ -1261,37 +1260,16 @@ export default function RoguePrepForm() {
           <div className="done-hero">
             <h1 className="done-title">
               {returnView ? "Welcome back. " : "Form done. "}
-              <span className="done-title-accent">Here&apos;s what {who} sees.</span>
+              <span className="done-title-accent">{returnView ? "Your answers are saved." : "One more thing."}</span>
             </h1>
             <p className="done-body">
-              {closerName ? `${closerName}, your strategist for this call,` : "Your strategist"} will go through
-              these numbers with you before anything else.
+              {closerName
+                ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
+                : "Your strategist will go through your answers before the call."}
             </p>
           </div>
 
-          {/* Personal numbers first (Patrick 2026-10-25), then the share prompt. */}
-          <RetirementSnapshot
-            income={income}
-            retirement={parseNumOrNull(retirement401k)}
-            knownAge={prefill.age || savedAge}
-          />
-          <DebtClock
-            cardDebt={parseNumOrNull(creditCardDebt)}
-            loanDebt={parseNumOrNull(personalLoanDebt)}
-            monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
-            income={income}
-          />
-          {shareLink && income > 0 ? <ShareResults link={shareLink} closerName={closerName} /> : null}
-
-          <div className="done-todo">
-            <button type="button" className="done-todo-item" onClick={() => jumpTo("training")}>
-              <b>Watch Andy&apos;s pre-call training before you talk to {who}.</b>
-            </button>
-            <button type="button" className="done-todo-item" onClick={openPartner}>
-              <b>If you share money with a partner, they join the call too.</b>
-            </button>
-          </div>
-
+          {/* Order (Patrick 2026-10-25): training first, then their own numbers, then the breakouts. */}
           <div className="done-card" id="training">
             <h2 className="done-card-title">{COMPLETION_VIDEO_TITLE}</h2>
             <p className="done-card-body">{COMPLETION_VIDEO_BODY}</p>
@@ -1307,6 +1285,25 @@ export default function RoguePrepForm() {
               ))}
             </ol>
           </div>
+
+          {income > 0 ? (
+            <div className="done-results">
+              <h2 className="done-results-title">Here&apos;s what {who} sees.</h2>
+              <p className="done-proof-sub">Your numbers from the form. {closerName || "Your strategist"} goes through them with you on the call.</p>
+              <RetirementSnapshot
+                income={income}
+                retirement={parseNumOrNull(retirement401k)}
+                knownAge={prefill.age || savedAge}
+              />
+              <DebtClock
+                cardDebt={parseNumOrNull(creditCardDebt)}
+                loanDebt={parseNumOrNull(personalLoanDebt)}
+                monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
+                income={income}
+              />
+              {shareLink ? <ShareResults link={shareLink} closerName={closerName} /> : null}
+            </div>
+          ) : null}
 
           <BreakoutVideos viewer={viewer} openId={openBreakout} onOpen={setOpenBreakout} />
 
