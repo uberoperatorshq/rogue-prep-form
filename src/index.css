@@ -163,8 +163,26 @@ input[type="number"] {
 .done-q-row .done-q-text { cursor: pointer; }
 .done-q-row .done-q-label { margin-top: 0; font-size: 15px; }
 .done-q-row .done-q-teaser { font-size: 13.5px; }
-.done-snap-first { padding-bottom: 28px; }
-.done-snap-first .done-snap { padding-top: 0; }
+.done-hero + .done-snap { padding-top: 0; }
+/* Debt clock (MOCKUP 2026-10-25) */
+.done-debt { text-align: center; padding-top: 40px; }
+.done-debt .done-qs-title { margin-bottom: 8px; }
+.done-debt-tick { text-align: center; padding: 4px 0 6px; }
+.done-debt-tick-v { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 40px; font-weight: 800; color: #e8392a; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.done-debt-tick-k { font-size: 14px; color: #999999; margin-top: 4px; }
+.done-debt-live { display: inline-block; margin-top: 10px; font-size: 14px; color: #e8392a; font-variant-numeric: tabular-nums; border: 1px solid #3a1a16; border-radius: 6px; padding: 4px 10px; }
+/* Share with the person joining the call */
+.done-share { max-width: 720px; margin: 28px auto 0; background: #111111; border: 1px solid #222222; border-radius: 12px; padding: 20px 18px; text-align: center; }
+.done-share-title { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 20px; font-weight: 700; color: #ffffff; margin: 0 0 6px; }
+.done-share-body { font-size: 15px; color: #999999; margin: 0 0 16px; }
+.done-share-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.done-share-btn {
+  display: inline-block; cursor: pointer; text-decoration: none; font: inherit; font-size: 15px; font-weight: 600;
+  color: #ffffff; background: #1b1b1b; border: 1px solid #333333; border-radius: 8px; padding: 10px 16px;
+}
+.done-share-btn:hover { border-color: #555555; }
+.done-share-main { background: #e8392a; border-color: #e8392a; }
+.done-todo { margin-top: 28px; }
 @media (max-width: 900px) { .done-reviews { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 900px) { .done-qs-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) {

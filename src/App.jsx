@@ -765,6 +765,132 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
   );
 }
 
+// Debt clock. MOCKUP (Patrick 2026-10-25), built to show the customer journey, not approved:
+// the rates below are assumptions, not the prospect's own, and the copy and the guideline need
+// sign-off before this merges. Uses the debt answers from the form; the live results link does
+// not return debts (by design), so on a reopened link it only shows on the local mock.
+const DEBT_CLOCK_APR = { card: 0.22, loan: 0.12 }; // assumed, roughly US averages
+const DEBT_PAYMENT_GUIDELINE = 0.36; // common lender guideline: debt payments under 36% of gross income
+
+function debtFreeMonths(balance, monthlyRate, payment) {
+  if (balance <= 0) return 0;
+  if (!payment || payment <= balance * monthlyRate) return null; // never, at this payment
+  if (monthlyRate === 0) return Math.ceil(balance / payment);
+  return Math.ceil(-Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate));
+}
+
+function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
+  const card = cardDebt > 0 ? cardDebt : 0;
+  const loan = loanDebt > 0 ? loanDebt : 0;
+  const total = card + loan;
+  const yearlyInterest = card * DEBT_CLOCK_APR.card + loan * DEBT_CLOCK_APR.loan;
+  const [opened] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (total <= 0) return;
+    const id = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(id);
+  }, [total]);
+  if (total <= 0) return null;
+
+  const perDay = yearlyInterest / 365;
+  const sinceOpened = (perDay * (now - opened)) / 864e5;
+  const months = debtFreeMonths(total, yearlyInterest / total / 12, monthlyPayment);
+  let freeLabel = "Not at this payment";
+  if (months !== null) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    freeLabel = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  const share = income > 0 && monthlyPayment > 0 ? (monthlyPayment * 12) / income : null;
+  const money = (n) => "$" + Math.round(n).toLocaleString();
+  return (
+    <div className="done-debt">
+      <h2 className="done-qs-title">Your debt clock</h2>
+      <p className="done-proof-sub">What your card and loan balances cost while you wait, based on what you entered.</p>
+      <div className="done-snap-card">
+        <div className="done-debt-tick">
+          <div className="done-debt-tick-v">{money(yearlyInterest)} a year</div>
+          <div className="done-debt-tick-k">in interest at these balances</div>
+          <div className="done-debt-live">+${sinceOpened.toFixed(4)} since you opened this page</div>
+        </div>
+        <div className="done-snap-grid">
+          <div className="done-snap-cell">
+            <div className="done-snap-k">Card and loan debt</div>
+            <div className="done-snap-v">{shortMoney(total)}</div>
+            <div className="done-snap-m">{money(perDay)} of interest a day</div>
+          </div>
+          <div className="done-snap-cell">
+            <div className="done-snap-k">Debt-free at your current payments</div>
+            <div className={"done-snap-v" + (months === null ? " done-snap-gap" : "")}>{freeLabel}</div>
+            <div className="done-snap-m">
+              {months === null ? "Payments don't cover the interest" : months + " months from now"}
+            </div>
+          </div>
+          <div className="done-snap-cell">
+            <div className="done-snap-k">Where you&apos;d want to be</div>
+            <div className="done-snap-v">Under {Math.round(DEBT_PAYMENT_GUIDELINE * 100)}%</div>
+            <div className={"done-snap-m" + (share !== null && share > DEBT_PAYMENT_GUIDELINE ? " done-snap-gap" : "")}>
+              {share === null ? "of income on debt payments" : "of income on debt payments. Yours: " + Math.round(share * 100) + "%"}
+            </div>
+          </div>
+        </div>
+        <p className="done-snap-note">
+          Mockup. Assumes {Math.round(DEBT_CLOCK_APR.card * 100)}% a year on cards and{" "}
+          {Math.round(DEBT_CLOCK_APR.loan * 100)}% on personal loans, and that your monthly debt payments all go to these
+          balances. Your real rates will differ. Your strategist can walk through it with you on the call.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// "Is someone else joining you on this call?" Shares the results link (no numbers in the link
+// itself; it opens them, so whoever gets it sees them). Phone share sheet when the browser has
+// one, plus WhatsApp, iMessage/SMS and copy.
+function ShareResults({ link, closerName }) {
+  const [copied, setCopied] = useState(false);
+  const text =
+    "Here are my prep answers for our call" + (closerName ? " with " + closerName : "") +
+    " at Rogue Finance. Have a look before we talk: " + link;
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this link", link);
+    }
+  };
+  return (
+    <div className="done-share">
+      <h2 className="done-share-title">Is someone else joining you on this call?</h2>
+      <p className="done-share-body">Send them your results so they see the same numbers before you talk.</p>
+      <div className="done-share-btns">
+        {canShare ? (
+          <button
+            type="button"
+            className="done-share-btn done-share-main"
+            onClick={() => navigator.share({ title: "Rogue Finance prep", text, url: link }).catch(() => {})}
+          >
+            Share
+          </button>
+        ) : null}
+        <a className="done-share-btn" href={"https://wa.me/?text=" + encodeURIComponent(text)} target="_blank" rel="noreferrer">
+          WhatsApp
+        </a>
+        <a className="done-share-btn" href={"sms:?&body=" + encodeURIComponent(text)}>
+          iMessage / text
+        </a>
+        <button type="button" className="done-share-btn" onClick={copy}>
+          {copied ? "Link copied" : "Copy link"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // COMPONENT
 // =========================================================================
@@ -921,6 +1047,10 @@ export default function RoguePrepForm() {
           if (Number(j.annualHouseholdIncome) > 0) setReturnView(true);
         }
         if (j.retirement401k != null) setRetirement401k(String(j.retirement401k));
+        // Debt clock mockup: the live lookup does not return these, the local mock does.
+        if (j.creditCardDebt != null) setCreditCardDebt(String(j.creditCardDebt));
+        if (j.personalLoanDebt != null) setPersonalLoanDebt(String(j.personalLoanDebt));
+        if (j.monthlyDebtPayments != null) setMonthlyDebtPayments(String(j.monthlyDebtPayments));
         if (Number.isInteger(j.age)) setSavedAge(j.age);
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
         if (looksLikeEmail(j.email)) setEmail(j.email.trim());
@@ -1117,53 +1247,48 @@ export default function RoguePrepForm() {
       setOpenBreakout(PARTNER_VIDEO_ID);
       jumpTo("breakout-" + PARTNER_VIDEO_ID);
     };
-    const snapshot = (
-      <RetirementSnapshot
-        income={parseNumOrNull(annualHouseholdIncome)}
-        retirement={parseNumOrNull(retirement401k)}
-        knownAge={prefill.age || savedAge}
-      />
-    );
-    const strategist = closerName ? closerName : "Your strategist";
+    const income = parseNumOrNull(annualHouseholdIncome);
+    const sharedId = paramResults || resultsId;
+    const shareLink =
+      typeof window !== "undefined" && sharedId
+        ? window.location.origin + window.location.pathname + "?view=complete&r=" + sharedId
+        : "";
+    const who = closerName || "your strategist";
     return (
       <div className="done-page">
         <div className="done-inner">
           <Header />
           <div className="done-hero">
-            {returnView ? (
-              <>
-                <h1 className="done-title">
-                  Welcome back. <span className="done-title-accent">Your answers are saved.</span>
-                </h1>
-                <p className="done-body">
-                  {strategist} has them for the call. Your snapshot is first, the training and
-                  Andy&apos;s answers are below it.
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="done-title">
-                  Form done. <span className="done-title-accent">One more thing.</span>
-                </h1>
-                <p className="done-body">
-                  {closerName
-                    ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
-                    : "Your strategist will go through your answers before the call."}
-                </p>
-              </>
-            )}
+            <h1 className="done-title">
+              {returnView ? "Welcome back. " : "Form done. "}
+              <span className="done-title-accent">Here&apos;s what {who} sees.</span>
+            </h1>
+            <p className="done-body">
+              {closerName ? `${closerName}, your strategist for this call,` : "Your strategist"} will go through
+              these numbers with you before anything else.
+            </p>
           </div>
 
-          {returnView ? <div className="done-snap-first">{snapshot}</div> : null}
+          {/* Personal numbers first (Patrick 2026-10-25), then the share prompt. */}
+          <RetirementSnapshot
+            income={income}
+            retirement={parseNumOrNull(retirement401k)}
+            knownAge={prefill.age || savedAge}
+          />
+          <DebtClock
+            cardDebt={parseNumOrNull(creditCardDebt)}
+            loanDebt={parseNumOrNull(personalLoanDebt)}
+            monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
+            income={income}
+          />
+          {shareLink && income > 0 ? <ShareResults link={shareLink} closerName={closerName} /> : null}
 
           <div className="done-todo">
             <button type="button" className="done-todo-item" onClick={() => jumpTo("training")}>
-              <b>Watch Andy&apos;s pre-call training.</b>
-              24 minutes, about 16 at the speed it starts on. Jump to the part you care about.
+              <b>Watch Andy&apos;s pre-call training before you talk to {who}.</b>
             </button>
             <button type="button" className="done-todo-item" onClick={openPartner}>
               <b>If you share money with a partner, they join the call too.</b>
-              Both of you, same room. <span className="done-todo-link">Andy explains why in 66 seconds</span>
             </button>
           </div>
 
@@ -1184,8 +1309,6 @@ export default function RoguePrepForm() {
           </div>
 
           <BreakoutVideos viewer={viewer} openId={openBreakout} onOpen={setOpenBreakout} />
-
-          {returnView ? null : snapshot}
 
           <div className="done-stats">
             <div className="done-stat">
