@@ -77,37 +77,202 @@ const BREAKOUT_VIDEOS = [
   },
 ];
 
-// Verbatim Trustpilot reviews, same six the GHL confirmation page shows first.
+// Client wins wall: Slack screenshots from the client channels, names blurred.
+// Picked 2026-10-19 from wins-web.zip (85 files, 34 leaked a name or face and
+// were dropped). Files in public/prep-assets/wins so the /prep proxy serves them.
+// Added at the bottom 2026-10-25 (Patrick). win-s88 (credit score up 75 points) held back for a
+// compliance call, same as the credit-score reviews.
+const WINS_TITLE = "From our client channel";
+const WINS_SUB = "Real messages from Rogue clients, as they posted them. Names blurred for privacy. Individual experiences, results vary.";
+const WINS = [
+  { file: "win-s04.webp", w: 900, h: 294, alt: "Client: my mind is freed from the lender, the system is in place and my wife is on board." },
+  { file: "win-s36.webp", w: 900, h: 400, alt: "Client: paid an $800 car repair without putting it on credit, and didn't panic." },
+  { file: "win-s92.webp", w: 646, h: 398, alt: "Client couple: just over $8,000 left across our accounts after the month's major bills." },
+  { file: "win-s58.webp", w: 900, h: 395, alt: "Client: I don't even remember when payday is now, and I spend on half the stuff I used to." },
+  { file: "win-s73.webp", w: 900, h: 194, alt: "Client: got everything automated and organized, so much relief." },
+  { file: "win-s74.webp", w: 900, h: 323, alt: "Client: started in debt with negative cash flow, now positive cash flow and three quarters of a month in savings." },
+  { file: "win-s90.webp", w: 900, h: 577, alt: "Client: husband's $900 bonus went automatically into savings." },
+  { file: "win-s78.webp", w: 900, h: 415, alt: "Client: slept well for the first time in so long after paying everything off or down." },
+];
+
+// Trustpilot reviews, scanned 2026-10-25 (39 live, all 5 stars), newest first. Excerpts in the reviewer's
+// own words, cut only, never reworded. Held back for a compliance call: Kara Turrentine, Lissetth Jarquin,
+// Jennifer Crabtree (credit-score claims), Daniel Geyer (investment returns).
 const REVIEWS = [
   {
-    "name": "Emma Skelton",
-    "date": "March 28, 2026",
-    "text": "Andy was just fabulous. He was gracious, non-judgemental and patient as we worked through all our finances. Fast forward a year, and we paid off over $100k in car loans and other debt, and never felt deprived. This year, we have been able to put over $200,000 into our retirement accounts, something that seemed impossible just a few years ago. 100% recommended!!"
+    "name": "Gary",
+    "date": "October 22, 2026",
+    "text": "I own a couple of small businesses with large sums of money constantly moving in and out. For the past 12 years, I've been so focused on managing cash flow on the business side that I let my personal finances get away from me. Rogue Finance changed that. In just four months, my personal finances are night and day compared to where they were."
+  },
+  {
+    "name": "Erik Thomas",
+    "date": "October 20, 2026",
+    "text": "Rogue Finance was one of the best financial moves I ever made. They really helped me get my financials in order and the system really works! Its super flexible and can expand or contract as needed. Thanks Andy and Joanna for all your help!"
+  },
+  {
+    "name": "Dahianna Soris-Becerril",
+    "date": "October 20, 2026",
+    "text": "After years and yrs of trying to budget using spreadsheets, every dollar app, and YNAB app, I had failed. One simple worksheet where I could see everything and a simple effective system that sets everything on autopilot was the missing piece to finally put us on The right track! While we still have a lot to accomplish, we can breathe easier knowing we have a solid plan to pay off debt, to save for emergencies and invest in our future!"
+  },
+  {
+    "name": "Michael Kemper",
+    "date": "September 28, 2026",
+    "text": "We started this program at a desperate place in our finances. We were drowning in debt payments, high interest rates, unable to keep track of everything and over-drafting left and right. I kept saying, “I make too much money to be living like this!” We haven’t over-drafted once since we started, which is huge. We feel so much lighter, and have hope for our financial future now."
+  },
+  {
+    "name": "Rich F",
+    "date": "September 25, 2026",
+    "text": "There are other companies offering programs and apps, etc. but this group is real and genuine, extremely supportive, and they actually care about your success long term. Changed my life. Wish I had this system 30 years ago!"
+  },
+  {
+    "name": "Nick",
+    "date": "September 16, 2026",
+    "text": "Fantastic coaching and support throughout the entire process. Joanna was amazing :) None of this is rocket science at the end of the day, but much of us lack the ability and confidence to ACT on the information in front of us. You just need a push and someone to get you started."
+  },
+  {
+    "name": "Mari Hayes Cockerell",
+    "date": "September 14, 2026",
+    "text": "Rogue Finance is legit! Before I got to work with his team, I still freaked out a little and wondered if I had been an idiot and fallen for a scam! But just a couple sessions in, things were turning around for us. So glad I made this decision!"
+  },
+  {
+    "name": "Ainsley Watson",
+    "date": "September 13, 2026",
+    "text": "This program was great. I got paired with some amazing coaches and they not only addressed the financial piece but also helped me with the emotional side of money. I’m in a place now where I feel better able to make decisions and my money is working for me."
+  },
+  {
+    "name": "Michele Ponik",
+    "date": "September 8, 2026",
+    "text": "Life changing program. Lots of support to set you up to succeed. I can’t believe the 90 days are up already but I’ve learned so much and it’s greatly reduced my anxiety surrounding money. I finally feel in control of my money for the first time in my life."
+  },
+  {
+    "name": "Jackie Feland",
+    "date": "August 16, 2026",
+    "text": "My husband and I have both worked full time while raising 3 sweet kiddos and no matter how much more money we made a year we always caught ourselves living pay check to pay check. With the systems Joanna and the team gave us we were able to put thousands in savings in 90 days. I was skeptical the first week if it would work for our family and lifestyle but it immediately paid off!"
+  },
+  {
+    "name": "Michael Bell",
+    "date": "July 26, 2026",
+    "text": "We came to Rogue Finance feeling completely underwater. Our bills were scattered everywhere, we were constantly worried about overdrafting, and we couldn't see a clear picture of our own money. They helped us build a simple, automated flow where our paychecks route themselves to the right places. For the first time we actually understand where every dollar goes."
+  },
+  {
+    "name": "Suzanne Whitlock",
+    "date": "July 25, 2026",
+    "text": "I had to have house repair & didn't realize how much money I made & how much I was spending. Andy & Jennifer are so smart, savvy & sweet. I feel I learned invaluable info that is changing my financial life & I am so grateful."
+  },
+  {
+    "name": "Frank Curcio",
+    "date": "July 23, 2026",
+    "text": "My wife and I both make good money. We have 2 teen kids and couldn’t understand how the negative account balances started happening. Today we are $1K+ in positive cash flow with cars paid off and actually talking about building up our savings from one month to 3 or even 6 months."
+  },
+  {
+    "name": "Dominic Phelps",
+    "date": "July 15, 2026",
+    "text": "Rogue Team is nothing short of amazing. There knowledge, the relatability, and realistic goal setting makes you feel like it is achievable. I highly recommend this program for any person looking to change their relationship with money!"
+  },
+  {
+    "name": "Matthew Birdsall",
+    "date": "July 1, 2026",
+    "text": "I’m a single parent of three with a great job, yet I was still constantly living paycheck to paycheck. I had tried to budget for years with zero success. They taught me how to stop judging myself, and I finally dropped the guilt of saying, \"I shouldn't have bought that.\" Today, I am actively hitting savings goals for my kids, and our end-of-summer travel plans are fully funded."
+  },
+  {
+    "name": "Trace",
+    "date": "June 18, 2026",
+    "text": "Rogue Finance, Andy and Joanna helped me understand there’s a better way to manage money by paying myself first!!! It’s sounds simple but there’s a process / transition that they walk you through every step of the way!!"
+  },
+  {
+    "name": "Dave",
+    "date": "June 16, 2026",
+    "text": "I cannot say enough good things about Rogue Finance and their team. From the very beginning, they have provided an exceptional level of service, communication, and personal attention. The team’s responsiveness, professionalism, and genuine care for their clients are evident in every interaction."
+  },
+  {
+    "name": "Melissa Trask",
+    "date": "May 27, 2026",
+    "text": "Before this class, I was stressing about money multiple times a day. Now I check my account once a week, guilt-free. The program makes saving money completely effortless while still ensuring I have money left over to spend. My only real regret is that I didn't find this program 10 years ago!"
+  },
+  {
+    "name": "Ken F",
+    "date": "May 1, 2026",
+    "text": "Andy’s Automatic Money (AMF) course and system just works. They helped me get out of a reactive financial posture and into a proactive planner archetype. I’m super grateful especially to my knowledgeable coach Joanna for successfully hand holding me through the process."
+  },
+  {
+    "name": "David MacNiven",
+    "date": "April 17, 2026",
+    "text": "It's hard to admit to gaps in knowledge around personal finance and being successful professionally while struggling to manage debt and savings for my family. Andy and Joanna at Rogue Finance are incredible and the system they teach is one that brings awareness and clarity to managing money."
   },
   {
     "name": "Gabe Smith",
     "date": "April 16, 2026",
-    "text": "Andy's coaching helped us to completely rethink the way we handle our business and personal finance. He showed us the power of automation and the freedom of systems that work. But the biggest payoff didn't have anything to do with money. His thoughtful, kind, direct, and relationally attuned approach provided a pathway for growth in our marriage too."
+    "text": "Andy's coaching helped us to completely rethink the way we handle our business and personal finance. He showed us the power of automation and the freedom of systems that work. But the biggest payoff of our time with Andy didn't have anything to do with money. His thoughtful, kind, direct, and relationally attuned approach provided a pathway for growth in our marriage too."
   },
   {
-    "name": "Bridget Finn",
-    "date": "January 28, 2026",
-    "text": "I was never good with money. I had a lot of shame around it. Over the years my income increased but I always found myself in the same paycheck-to-paycheck cycle. Andy's \"recipe\" helped me build a system where my money works for me. My bills are paid automatically. My savings are growing automatically. The stress and fear has been replaced with pride!"
+    "name": "josh acuff",
+    "date": "April 15, 2026",
+    "text": "As a small business owner, I feel more at peace with our financial situation now than I have in the past 5 years. Don't walk, run to get started and take that first step to changing your relationship to your finances for the rest of your life."
   },
   {
-    "name": "Lea Murrell",
-    "date": "March 11, 2026",
-    "text": "Andy, Joanna, and the Rogue Financial process have changed my life so incredibly significantly in three short months! Following a divorce, some other financial setbacks, and largely just not being very financially savvy I was not in a good place. The program itself, the communication, and the encouragement was exactly what I needed. I hate to think about where I would be if I never started it."
+    "name": "Emma Skelton",
+    "date": "March 28, 2026",
+    "text": "Andy was just fabulous. He was gracious, non-judgemental and patient as we worked through all our finances. Fast forward a year, and we paid off over $100k in car loans and other debt, and never felt deprived or missing out on other activities. This year, we have been able to put over $200,000 into our retirement accounts, something that seemed impossible just a few years ago."
   },
   {
     "name": "Jimmy Vanaria",
     "date": "March 23, 2026",
-    "text": "My wife and I have been stuck in a paycheck-to-paycheck cycle for our entire marriage. Working with Rogue Finance completely changed that in just 90 days. They helped us build a clear, simple system that actually works for our real lives. We're not just \"getting by\" anymore. We feel in control."
+    "text": "My wife and I have been stuck in a paycheck-to-paycheck cycle for our entire marriage, and no matter how much we earned, it always felt like we were just trying to stay afloat. Working with Rogue Finance completely changed that in just 90 days. We’re not just “getting by” anymore. We feel in control."
+  },
+  {
+    "name": "Lea Murrell",
+    "date": "March 11, 2026",
+    "text": "Andy, Joanna, and the Rogue Financial process have changed my life so incredibly significantly in three short months! Following a divorce, some other financial setbacks, and largely just not being very financially savvy I was not in a good place despite making a decent single income. The program itself, the communication, and the encouragement that this has provided was exactly what I needed."
+  },
+  {
+    "name": "Jonjon Battles",
+    "date": "February 20, 2026",
+    "text": "Andy helped me put aside the fear and confusion I had about money and helped bring it into focus. Laid a plan based on what I've got coming in and going out and is there to support and answer questions, give ideas any time."
   },
   {
     "name": "Camille West",
     "date": "February 11, 2026",
-    "text": "The team at Rogue Finance helped me gain meaningful clarity and structure around my finances. What stood out was not just the mindset shift they encouraged, but the practical, sustainable system they introduced. Andy, Joanna, and the entire team were knowledgeable, supportive, and genuinely invested in my progress."
+    "text": "The team at Rogue Finance helped me gain meaningful clarity and structure around my finances. Andy, Joanna, and the entire team were knowledgeable, supportive, and genuinely invested in my progress. While I was responsible for doing the work, their guidance and accountability made all the difference."
+  },
+  {
+    "name": "Dave P",
+    "date": "February 11, 2026",
+    "text": "I was very skeptical going into this because there are a TON of online scams in the finance world. Trust me when I say Andy and team are the real deal. They don’t ask for your passwords or any personal information except for the amount of debt you have, your income, and your monthly spending. Andy is a real dude who you’ll talk to on zoom calls and is completely accessible as you go through the program."
+  },
+  {
+    "name": "Beatrice Urtecho",
+    "date": "February 6, 2026",
+    "text": "Andy is so easy to talk to and work with. He was able to help me understand finance in a way I hadn’t been taught before. He helped me save enough money so I could open my own business and be able to travel. Working with him has been life changing!"
+  },
+  {
+    "name": "Justin C.",
+    "date": "February 5, 2026",
+    "text": "A big part of my income is variable and paid quarterly, so traditional budgeting never really fit my life. Andy helped me build an automated, rules-based system that’s simple and honestly hard to mess up. The biggest win, though, is peace of mind. I feel in control instead of guessing."
+  },
+  {
+    "name": "Jeff",
+    "date": "February 3, 2026",
+    "text": "Andy and his team have been excellent to work with to change my view on my finances. They are upfront and honest. They have lots of experience with difficult financial situations so don’t be afraid to be vulnerable with them about your finances."
+  },
+  {
+    "name": "JZ",
+    "date": "February 2, 2026",
+    "text": "Andy brings clarity to a space that often feels confusing and intimidating. He explains financial decisions in plain language, focuses on real outcomes, and puts people first at every step. You never feel rushed. You never feel sold to. You feel informed and supported."
+  },
+  {
+    "name": "Sloane",
+    "date": "February 2, 2026",
+    "text": "As a young married couple looking to start out on the right foot, Andy and his team have made understanding and managing our money not only feel possible, but very exciting! I’m so grateful for the support they offer, and the insights of this system."
+  },
+  {
+    "name": "Thrnmanz",
+    "date": "January 30, 2026",
+    "text": "Working with Andy and Rogue Finance we really were able to see our finances as a whole. He opened our eyes to see where our spending habits were coming from and helped us create a comfortable budget."
+  },
+  {
+    "name": "Bridget Finn",
+    "date": "January 28, 2026",
+    "text": "I was never good with money. I had a lot of shame around it. Over the years my income increased steadily enough but I always found myself in the same paycheck to paycheck cycle. Andy’s “recipe” helped me to build a system where my money works for me. My bills are paid automatically. My savings are growing automatically."
   }
 ];
 
@@ -880,6 +1045,29 @@ function ShareResults({ link, closerName }) {
   );
 }
 
+function WinsWall() {
+  return (
+    <div className="done-wins">
+      <h2 className="done-qs-title">{WINS_TITLE}</h2>
+      <p className="done-proof-sub">{WINS_SUB}</p>
+      <div className="done-wins-grid">
+        {WINS.map((w) => (
+          <div className="done-win" key={w.file}>
+            <img
+              src={`/prep-assets/wins/${w.file}`}
+              width={w.w}
+              height={w.h}
+              alt={w.alt}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // COMPONENT
 // =========================================================================
@@ -963,6 +1151,7 @@ export default function RoguePrepForm() {
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
     if (!paramToken) return;
@@ -1310,7 +1499,7 @@ export default function RoguePrepForm() {
             </h2>
             <p className="done-proof-sub">Here&apos;s what people say after sitting where you&apos;re sitting now.</p>
             <div className="done-reviews">
-              {REVIEWS.map((r) => (
+              {(showAllReviews ? REVIEWS : REVIEWS.slice(0, 9)).map((r) => (
                 <div className="done-review" key={r.name}>
                   <div className="done-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                   <div className="done-review-name">{r.name}</div>
@@ -1319,7 +1508,14 @@ export default function RoguePrepForm() {
                 </div>
               ))}
             </div>
+            {showAllReviews ? null : (
+              <button type="button" className="done-share-btn done-reviews-more" onClick={() => setShowAllReviews(true)}>
+                Show all {REVIEWS.length} reviews
+              </button>
+            )}
           </div>
+
+          <WinsWall />
         </div>
       </div>
     );

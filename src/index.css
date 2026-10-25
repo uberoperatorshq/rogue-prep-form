@@ -170,6 +170,14 @@ input[type="number"] {
 .done-results { text-align: center; padding-top: 48px; }
 .done-results-title { font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif; font-size: clamp(30px, 4vw, 44px); font-weight: 900; text-transform: uppercase; line-height: 1.05; color: #ffffff; margin: 0 0 8px; }
 .done-results .done-snap { padding-top: 24px; }
+.done-reviews-more { margin-top: 18px; }
+.done-wins { text-align: center; padding-top: 40px; }
+.done-wins .done-qs-title { margin-bottom: 8px; }
+.done-wins-grid { column-count: 3; column-gap: 14px; text-align: left; }
+.done-win { break-inside: avoid; margin: 0 0 14px; background: #111111; border: 1px solid #222222; border-radius: 12px; overflow: hidden; }
+.done-win img { display: block; width: 100%; height: auto; }
+@media (max-width: 900px) { .done-wins-grid { column-count: 2; } }
+@media (max-width: 640px) { .done-wins-grid { column-count: 1; } }
 @media (max-width: 900px) { .done-reviews { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 900px) { .done-qs-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) {
