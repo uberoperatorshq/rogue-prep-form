@@ -652,7 +652,6 @@ function BreakoutVideos({ viewer, openId, onOpen }) {
               )}
               <div className="done-q-text" onClick={open ? undefined : () => onOpen(v.id)}>
                 <div className="done-q-label">{v.q}</div>
-                <p className="done-q-teaser">{v.a}</p>
               </div>
             </div>
           );
@@ -784,17 +783,9 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
   const loan = loanDebt > 0 ? loanDebt : 0;
   const total = card + loan;
   const yearlyInterest = card * DEBT_CLOCK_APR.card + loan * DEBT_CLOCK_APR.loan;
-  const [opened] = useState(() => Date.now());
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (total <= 0) return;
-    const id = setInterval(() => setNow(Date.now()), 100);
-    return () => clearInterval(id);
-  }, [total]);
   if (total <= 0) return null;
 
   const perDay = yearlyInterest / 365;
-  const sinceOpened = (perDay * (now - opened)) / 864e5;
   const months = debtFreeMonths(total, yearlyInterest / total / 12, monthlyPayment);
   let freeLabel = "Not at this payment";
   if (months !== null) {
@@ -807,12 +798,10 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
   return (
     <div className="done-debt">
       <h2 className="done-qs-title">Your debt clock</h2>
-      <p className="done-proof-sub">What your card and loan balances cost while you wait, based on what you entered.</p>
       <div className="done-snap-card">
         <div className="done-debt-tick">
           <div className="done-debt-tick-v">{money(yearlyInterest)} a year</div>
           <div className="done-debt-tick-k">in interest at these balances</div>
-          <div className="done-debt-live">+${sinceOpened.toFixed(4)} since you opened this page</div>
         </div>
         <div className="done-snap-grid">
           <div className="done-snap-cell">
@@ -974,8 +963,6 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
-  // Return visit (2026-10-25): the results link loaded saved answers, so the page leads with them.
-  const [returnView, setReturnView] = useState(false);
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
@@ -1046,8 +1033,6 @@ export default function RoguePrepForm() {
         if (!j || !j.ok) return;
         if (j.annualHouseholdIncome != null) {
           setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
-          // The snapshot needs income, so only lead with it when there is some.
-          if (Number(j.annualHouseholdIncome) > 0) setReturnView(true);
         }
         if (j.retirement401k != null) setRetirement401k(String(j.retirement401k));
         // Debt clock mockup: the live lookup does not return these, the local mock does.
@@ -1259,8 +1244,7 @@ export default function RoguePrepForm() {
           <Header />
           <div className="done-hero">
             <h1 className="done-title">
-              {returnView ? "Welcome back. " : "Form done. "}
-              <span className="done-title-accent">{returnView ? "Your answers are saved." : "One more thing."}</span>
+              Form done. <span className="done-title-accent">One more thing.</span>
             </h1>
             <p className="done-body">
               {closerName
