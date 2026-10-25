@@ -125,7 +125,6 @@ input[type="number"] {
 }
 .done-chapters button:hover { background: #1d1d1d; }
 .done-chapter-t { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #e8392a; font-variant-numeric: tabular-nums; padding-top: 1px; }
-.done-qs-sub { font-size: 15px; color: #888888; margin: -10px 0 18px; }
 .done-q-hot { border-color: #e8392a; }
 .done-q-len {
   position: absolute; right: 6px; bottom: 6px; z-index: 2; pointer-events: none;

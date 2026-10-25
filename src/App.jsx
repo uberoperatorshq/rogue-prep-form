@@ -30,7 +30,6 @@ const TRAINING_CHAPTERS = [
 // row partner, debt, deciding. Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
 // Run times from Wistia (2026-10-25), rounded to the nearest second like the Wistia player shows them; 10:36 in total. Stills = each media's custom thumbnail.
-const BREAKOUT_SUB = "Six short answers from Andy. All six run under 11 minutes.";
 const PARTNER_VIDEO_ID = "ywdmppplme";
 const WISTIA_STILL = "https://embed-ssl.wistia.com/deliveries/";
 const BREAKOUT_VIDEOS = [
@@ -621,7 +620,6 @@ function BreakoutVideos({ viewer, openId, onOpen }) {
   return (
     <div className="done-qs" id="breakouts">
       <h2 className="done-qs-title">{BREAKOUT_TITLE}</h2>
-      <p className="done-qs-sub">{BREAKOUT_SUB}</p>
       <div className="done-qs-grid">
         {BREAKOUT_VIDEOS.map((v) => {
           const open = !isPhone || openId === v.id;
