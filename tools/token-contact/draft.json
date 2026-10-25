@@ -67,7 +67,7 @@
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
    "position": [
-    1460,
+    1900,
     368
    ],
    "parameters": {
@@ -100,11 +100,11 @@
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
    "position": [
-    1844,
+    2284,
     368
    ],
    "parameters": {
-    "jsCode": "const webhook = $('Prep Form Webhook').first().json.body || $('Prep Form Webhook').first().json || {};\nconst contact = webhook.contact || {};\n\nconst num = (v) => {\n  if (v === null || v === undefined || v === '') return null;\n  const n = parseFloat(v);\n  return Number.isFinite(n) ? n : null;\n};\n\nconst annualHouseholdIncome = num(webhook.annualHouseholdIncome);\nconst creditScore = num(webhook.creditScore);\nconst creditCardDebt = num(webhook.creditCardDebt);\nconst personalLoanDebt = num(webhook.personalLoanDebt);\nconst totalCreditLimit = num(webhook.totalCreditLimit);\nconst retirement401k = num(webhook.retirement401k);\nconst homeEquity = num(webhook.homeEquity);\nconst otherAssetsValue = num(webhook.otherAssetsValue);\nconst savings = num(webhook.savings);\nconst monthlyRentMortgage = num(webhook.monthlyRentMortgage);\nconst monthlyDebtPayments = num(webhook.monthlyDebtPayments);\nconst totalMonthlyExpenses = num(webhook.totalMonthlyExpenses);\n\nconst availableCredit = (totalCreditLimit !== null && creditCardDebt !== null)\n  ? (totalCreditLimit - creditCardDebt) : null;\nconst utilization = (totalCreditLimit !== null && totalCreditLimit > 0 && creditCardDebt !== null)\n  ? (creditCardDebt / totalCreditLimit) : null;\nconst pifPower = Math.max(0, availableCredit || 0) + Math.max(0, savings || 0);\nconst monthlyIncome = annualHouseholdIncome !== null ? (annualHouseholdIncome / 12) : null;\nconst monthlyCashflow = (monthlyIncome !== null && totalMonthlyExpenses !== null)\n  ? (monthlyIncome - totalMonthlyExpenses) : null;\n\nlet route;\nif (pifPower >= 15000) route = 'PIF (Pay In Full)';\nelse if (creditScore !== null && creditScore > 600 && utilization !== null && utilization <= 0.70) route = 'Payva Funding (likely accepted)';\nelse if (availableCredit !== null && availableCredit >= 6000) route = 'Split It';\nelse route = 'Payva Servicing';\n\nconst fmtMoney = (n) => (n === null || n === undefined) ? 'not provided' : ('$' + Math.round(Math.abs(n)).toLocaleString());\nconst fmtAvail = (n) => {\n  if (n === null || n === undefined) return 'not provided';\n  if (n < 0) return '-$' + Math.round(Math.abs(n)).toLocaleString() + ' (over limit)';\n  return '$' + Math.round(n).toLocaleString();\n};\nconst fmtPct = (n) => (n === null || n === undefined) ? 'n/a' : (Math.round(n * 100) + '%');\nconst fmtCashflow = (n) => {\n  if (n === null || n === undefined) return 'not enough info';\n  const s = n < 0 ? '-' : '+';\n  return s + '$' + Math.round(Math.abs(n)).toLocaleString();\n};\nconst fmtText = (v) => (!v || !String(v).trim()) ? 'not provided' : String(v).trim();\nconst fullName = fmtText(contact.fullName);\nconst email = fmtText(contact.email);\nconst stateStr = fmtText(webhook.state);\nconst debtNotes = (webhook.debtNotes && String(webhook.debtNotes).trim()) ? String(webhook.debtNotes).trim() : '';\nconst questions = (webhook.questions && String(webhook.questions).trim()) ? String(webhook.questions).trim() : '';\nconst otherAssetsNote = (webhook.otherAssetsNote && String(webhook.otherAssetsNote).trim()) ? String(webhook.otherAssetsNote).trim() : '';\n\n// --- You & money (mindset) fields; absent on pre-v2 form submissions ---\nconst bankCheckFrequency = (webhook.bankCheckFrequency && String(webhook.bankCheckFrequency).trim()) ? String(webhook.bankCheckFrequency).trim() : '';\nconst financialLiteracy = num(webhook.financialLiteracy);\nconst moneyRelationshipWord = (webhook.moneyRelationshipWord && String(webhook.moneyRelationshipWord).trim()) ? String(webhook.moneyRelationshipWord).trim() : '';\nconst financialFrustration = (webhook.financialFrustration && String(webhook.financialFrustration).trim()) ? String(webhook.financialFrustration).trim() : '';\nconst hasMindset = !!(bankCheckFrequency || financialLiteracy !== null || moneyRelationshipWord || financialFrustration);\n\n\n// --- Pre-fill check (2026-10-20): the form pre-fills the setter's numbers from a signed\n// link token; show the closer what the prospect changed. No token at all = no block.\nconst PREFILL_LABELS = {\n  annualHouseholdIncome: 'Income', creditScore: 'Credit score', creditCardDebt: 'Credit card debt',\n  personalLoanDebt: 'Personal loan debt', retirement401k: '401k / retirement', homeEquity: 'Home equity',\n  savings: 'Savings', state: 'State',\n};\nconst prefill = (webhook.prefill && typeof webhook.prefill === 'object') ? webhook.prefill : null;\nconst prefillLines = [];\nif (prefill && prefill.status === 'filled' && prefill.values && typeof prefill.values === 'object') {\n  const fmtField = (k, v) => {\n    if (v === null || v === undefined || v === '') return 'blank';\n    if (k === 'state') return String(v);\n    if (k === 'creditScore') return String(Math.round(Number(v)));\n    return fmtMoney(Number(v));\n  };\n  const changes = [];\n  let same = 0;\n  for (const k of Object.keys(PREFILL_LABELS)) {\n    if (!(k in prefill.values)) continue;\n    const before = prefill.values[k];\n    const after = webhook[k];\n    const equal = k === 'state'\n      ? String(before || '').trim() === String(after || '').trim()\n      : (num(after) !== null && Math.abs(num(after) - Number(before)) < 0.5);\n    if (equal) same++;\n    else changes.push(PREFILL_LABELS[k] + ': ' + fmtField(k, before) + ' -> ' + fmtField(k, after));\n  }\n  const who = prefill.setter ? (prefill.setter + \"'s call\") : 'the setter call';\n  if (changes.length) {\n    prefillLines.push('Changed since ' + who + ' (setter -> prospect):');\n    changes.forEach((c) => prefillLines.push('- ' + c));\n    if (same) prefillLines.push(same + ' other pre-filled number' + (same === 1 ? '' : 's') + ' confirmed.');\n  } else {\n    prefillLines.push('Confirmed the numbers from ' + who + ', no changes (' + same + ' pre-filled).');\n  }\n} else if (prefill && prefill.reason && prefill.reason !== 'no_token') {\n  prefillLines.push('Pre-fill: none (' + String(prefill.reason).slice(0, 40) + ')');\n}\n\nconst lines = [];\nlines.push('=== RECOMMENDED ROUTE ===');\nlines.push(route);\nlines.push('Program: $6,000');\nlines.push('');\nlines.push('=== Contact ===');\nlines.push('Full name: ' + fullName);\nlines.push('Email: ' + email);\nlines.push('State: ' + stateStr);\nlines.push('');\nif (prefillLines.length) {\n  lines.push('=== Setter Numbers Check ===');\n  prefillLines.forEach((l) => lines.push(l));\n  lines.push('');\n}\nif (hasMindset) {\n  lines.push('=== You & Money ===');\n  lines.push('Checks bank balance: ' + (bankCheckFrequency || 'not provided'));\n  lines.push('Financial literacy (self-rated): ' + (financialLiteracy !== null ? (financialLiteracy + '/10') : 'not provided'));\n  lines.push('Relationship with money: ' + (moneyRelationshipWord ? ('\"' + moneyRelationshipWord + '\"') : 'not provided'));\n  if (financialFrustration) lines.push('Biggest frustration: ' + financialFrustration);\n  lines.push('');\n}\nlines.push('=== Income & Cashflow ===');\nlines.push('Gross annual income (before tax): ' + fmtMoney(annualHouseholdIncome));\nlines.push('~ ' + fmtMoney(monthlyIncome) + ' /mo before tax');\nlines.push('Total monthly expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('Projected monthly cashflow: ' + fmtCashflow(monthlyCashflow) + ' /mo (approx, before tax)');\nlines.push('');\nlines.push('=== Credit ===');\nlines.push('Credit score: ' + (creditScore !== null ? String(creditScore) : 'not provided'));\nlines.push('Credit card debt: ' + fmtMoney(creditCardDebt));\nlines.push('Personal loan debt: ' + fmtMoney(personalLoanDebt));\nlines.push('Total credit limit: ' + fmtMoney(totalCreditLimit));\nlines.push('Available credit: ' + fmtAvail(availableCredit));\nlines.push('Utilization: ' + fmtPct(utilization));\nlines.push('');\nlines.push('=== Assets ===');\nlines.push('401k / retirement: ' + fmtMoney(retirement401k));\nlines.push('Home equity: ' + fmtMoney(homeEquity));\nlines.push('Other assets: ' + fmtMoney(otherAssetsValue) + (otherAssetsNote ? ' (' + otherAssetsNote + ')' : ''));\nlines.push('Savings: ' + fmtMoney(savings));\nlines.push('');\nlines.push('=== PIF Power ===');\nlines.push('$' + Math.round(pifPower).toLocaleString() + ' (max(0, available credit) + max(0, savings))');\nlines.push('');\nlines.push('=== Monthly Money ===');\nlines.push('Rent / mortgage: ' + fmtMoney(monthlyRentMortgage));\nlines.push('Debt payments: ' + fmtMoney(monthlyDebtPayments));\nlines.push('Total expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('');\nlines.push('=== Free text ===');\nlines.push('Debt notes: ' + (debtNotes || '(none)'));\nlines.push('Questions: ' + (questions || '(none)'));\n\nconst noteBody = lines.join('\\n');\nconst contactId = $('Resolve Contact').first().json.contacts[0].id;\nreturn [{ json: { contactId, noteBody, route } }];\n"
+    "jsCode": "const webhook = $('Prep Form Webhook').first().json.body || $('Prep Form Webhook').first().json || {};\nconst contact = webhook.contact || {};\n\nconst num = (v) => {\n  if (v === null || v === undefined || v === '') return null;\n  const n = parseFloat(v);\n  return Number.isFinite(n) ? n : null;\n};\n\nconst annualHouseholdIncome = num(webhook.annualHouseholdIncome);\nconst creditScore = num(webhook.creditScore);\nconst creditCardDebt = num(webhook.creditCardDebt);\nconst personalLoanDebt = num(webhook.personalLoanDebt);\nconst totalCreditLimit = num(webhook.totalCreditLimit);\nconst retirement401k = num(webhook.retirement401k);\nconst homeEquity = num(webhook.homeEquity);\nconst otherAssetsValue = num(webhook.otherAssetsValue);\nconst savings = num(webhook.savings);\nconst monthlyRentMortgage = num(webhook.monthlyRentMortgage);\nconst monthlyDebtPayments = num(webhook.monthlyDebtPayments);\nconst totalMonthlyExpenses = num(webhook.totalMonthlyExpenses);\n\nconst availableCredit = (totalCreditLimit !== null && creditCardDebt !== null)\n  ? (totalCreditLimit - creditCardDebt) : null;\nconst utilization = (totalCreditLimit !== null && totalCreditLimit > 0 && creditCardDebt !== null)\n  ? (creditCardDebt / totalCreditLimit) : null;\nconst pifPower = Math.max(0, availableCredit || 0) + Math.max(0, savings || 0);\nconst monthlyIncome = annualHouseholdIncome !== null ? (annualHouseholdIncome / 12) : null;\nconst monthlyCashflow = (monthlyIncome !== null && totalMonthlyExpenses !== null)\n  ? (monthlyIncome - totalMonthlyExpenses) : null;\n\nlet route;\nif (pifPower >= 15000) route = 'PIF (Pay In Full)';\nelse if (creditScore !== null && creditScore > 600 && utilization !== null && utilization <= 0.70) route = 'Payva Funding (likely accepted)';\nelse if (availableCredit !== null && availableCredit >= 6000) route = 'Split It';\nelse route = 'Payva Servicing';\n\nconst fmtMoney = (n) => (n === null || n === undefined) ? 'not provided' : ('$' + Math.round(Math.abs(n)).toLocaleString());\nconst fmtAvail = (n) => {\n  if (n === null || n === undefined) return 'not provided';\n  if (n < 0) return '-$' + Math.round(Math.abs(n)).toLocaleString() + ' (over limit)';\n  return '$' + Math.round(n).toLocaleString();\n};\nconst fmtPct = (n) => (n === null || n === undefined) ? 'n/a' : (Math.round(n * 100) + '%');\nconst fmtCashflow = (n) => {\n  if (n === null || n === undefined) return 'not enough info';\n  const s = n < 0 ? '-' : '+';\n  return s + '$' + Math.round(Math.abs(n)).toLocaleString();\n};\nconst fmtText = (v) => (!v || !String(v).trim()) ? 'not provided' : String(v).trim();\nconst fullName = fmtText(contact.fullName);\nconst email = fmtText(contact.email);\nconst stateStr = fmtText(webhook.state);\n// Age (2026-10-23): asked by the setter, sent by the prep form. Typed on the completion page\n// only when the setter call had none.\nconst ageN = num(webhook.age);\nconst ageStr = ageN === null ? 'not provided'\n  : String(Math.round(ageN)) + (webhook.ageSource === 'prospect' ? ' (typed by prospect)' : ' (from setter call)');\nconst debtNotes = (webhook.debtNotes && String(webhook.debtNotes).trim()) ? String(webhook.debtNotes).trim() : '';\nconst questions = (webhook.questions && String(webhook.questions).trim()) ? String(webhook.questions).trim() : '';\nconst otherAssetsNote = (webhook.otherAssetsNote && String(webhook.otherAssetsNote).trim()) ? String(webhook.otherAssetsNote).trim() : '';\n\n// --- You & money (mindset) fields; absent on pre-v2 form submissions ---\nconst bankCheckFrequency = (webhook.bankCheckFrequency && String(webhook.bankCheckFrequency).trim()) ? String(webhook.bankCheckFrequency).trim() : '';\nconst financialLiteracy = num(webhook.financialLiteracy);\nconst moneyRelationshipWord = (webhook.moneyRelationshipWord && String(webhook.moneyRelationshipWord).trim()) ? String(webhook.moneyRelationshipWord).trim() : '';\nconst financialFrustration = (webhook.financialFrustration && String(webhook.financialFrustration).trim()) ? String(webhook.financialFrustration).trim() : '';\nconst hasMindset = !!(bankCheckFrequency || financialLiteracy !== null || moneyRelationshipWord || financialFrustration);\n\n\n// --- Pre-fill check (2026-10-20): the form pre-fills the setter's numbers from a signed\n// link token; show the closer what the prospect changed. No token at all = no block.\nconst PREFILL_LABELS = {\n  annualHouseholdIncome: 'Income', creditScore: 'Credit score', creditCardDebt: 'Credit card debt',\n  personalLoanDebt: 'Personal loan debt', retirement401k: '401k / retirement', homeEquity: 'Home equity',\n  savings: 'Savings', state: 'State',\n};\nconst prefill = (webhook.prefill && typeof webhook.prefill === 'object') ? webhook.prefill : null;\nconst prefillLines = [];\nif (prefill && prefill.status === 'filled' && prefill.values && typeof prefill.values === 'object') {\n  const fmtField = (k, v) => {\n    if (v === null || v === undefined || v === '') return 'blank';\n    if (k === 'state') return String(v);\n    if (k === 'creditScore') return String(Math.round(Number(v)));\n    return fmtMoney(Number(v));\n  };\n  const changes = [];\n  let same = 0;\n  for (const k of Object.keys(PREFILL_LABELS)) {\n    if (!(k in prefill.values)) continue;\n    const before = prefill.values[k];\n    const after = webhook[k];\n    const equal = k === 'state'\n      ? String(before || '').trim() === String(after || '').trim()\n      : (num(after) !== null && Math.abs(num(after) - Number(before)) < 0.5);\n    if (equal) same++;\n    else changes.push(PREFILL_LABELS[k] + ': ' + fmtField(k, before) + ' -> ' + fmtField(k, after));\n  }\n  const who = prefill.setter ? (prefill.setter + \"'s call\") : 'the setter call';\n  if (changes.length) {\n    prefillLines.push('Changed since ' + who + ' (setter -> prospect):');\n    changes.forEach((c) => prefillLines.push('- ' + c));\n    if (same) prefillLines.push(same + ' other pre-filled number' + (same === 1 ? '' : 's') + ' confirmed.');\n  } else {\n    prefillLines.push('Confirmed the numbers from ' + who + ', no changes (' + same + ' pre-filled).');\n  }\n} else if (prefill && prefill.reason && prefill.reason !== 'no_token') {\n  prefillLines.push('Pre-fill: none (' + String(prefill.reason).slice(0, 40) + ')');\n}\n\nconst lines = [];\nlines.push('=== RECOMMENDED ROUTE ===');\nlines.push(route);\nlines.push('Program: $6,000');\nlines.push('');\nlines.push('=== Contact ===');\nlines.push('Full name: ' + fullName);\nlines.push('Email: ' + email);\nlines.push('State: ' + stateStr);\nlines.push('Age: ' + ageStr);\nlines.push('');\nif (prefillLines.length) {\n  lines.push('=== Setter Numbers Check ===');\n  prefillLines.forEach((l) => lines.push(l));\n  lines.push('');\n}\nif (hasMindset) {\n  lines.push('=== You & Money ===');\n  lines.push('Checks bank balance: ' + (bankCheckFrequency || 'not provided'));\n  lines.push('Financial literacy (self-rated): ' + (financialLiteracy !== null ? (financialLiteracy + '/10') : 'not provided'));\n  lines.push('Relationship with money: ' + (moneyRelationshipWord ? ('\"' + moneyRelationshipWord + '\"') : 'not provided'));\n  if (financialFrustration) lines.push('Biggest frustration: ' + financialFrustration);\n  lines.push('');\n}\nlines.push('=== Income & Cashflow ===');\nlines.push('Gross annual income (before tax): ' + fmtMoney(annualHouseholdIncome));\nlines.push('~ ' + fmtMoney(monthlyIncome) + ' /mo before tax');\nlines.push('Total monthly expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('Projected monthly cashflow: ' + fmtCashflow(monthlyCashflow) + ' /mo (approx, before tax)');\nlines.push('');\nlines.push('=== Credit ===');\nlines.push('Credit score: ' + (creditScore !== null ? String(creditScore) : 'not provided'));\nlines.push('Credit card debt: ' + fmtMoney(creditCardDebt));\nlines.push('Personal loan debt: ' + fmtMoney(personalLoanDebt));\nlines.push('Total credit limit: ' + fmtMoney(totalCreditLimit));\nlines.push('Available credit: ' + fmtAvail(availableCredit));\nlines.push('Utilization: ' + fmtPct(utilization));\nlines.push('');\nlines.push('=== Assets ===');\nlines.push('401k / retirement: ' + fmtMoney(retirement401k));\nlines.push('Home equity: ' + fmtMoney(homeEquity));\nlines.push('Other assets: ' + fmtMoney(otherAssetsValue) + (otherAssetsNote ? ' (' + otherAssetsNote + ')' : ''));\nlines.push('Savings: ' + fmtMoney(savings));\nlines.push('');\nlines.push('=== PIF Power ===');\nlines.push('$' + Math.round(pifPower).toLocaleString() + ' (max(0, available credit) + max(0, savings))');\nlines.push('');\nlines.push('=== Monthly Money ===');\nlines.push('Rent / mortgage: ' + fmtMoney(monthlyRentMortgage));\nlines.push('Debt payments: ' + fmtMoney(monthlyDebtPayments));\nlines.push('Total expenses: ' + fmtMoney(totalMonthlyExpenses));\nlines.push('');\nlines.push('=== Free text ===');\nlines.push('Debt notes: ' + (debtNotes || '(none)'));\nlines.push('Questions: ' + (questions || '(none)'));\n\nconst noteBody = lines.join('\\n');\nconst contactId = $('Resolve Contact').first().json.contacts[0].id;\nreturn [{ json: { contactId, noteBody, route } }];\n"
    }
   },
   {
@@ -113,7 +113,7 @@
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
    "position": [
-    2228,
+    2668,
     368
    ],
    "parameters": {
@@ -148,7 +148,7 @@
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
    "position": [
-    1460,
+    1900,
     560
    ],
    "parameters": {
@@ -161,7 +161,7 @@
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
    "position": [
-    1844,
+    2284,
     560
    ],
    "parameters": {
@@ -197,7 +197,7 @@
    "typeVersion": 4.2,
    "onError": "continueRegularOutput",
    "position": [
-    1844,
+    2284,
     768
    ],
    "parameters": {
@@ -240,9 +240,9 @@
     128
    ],
    "parameters": {
-    "content": "## Intake & Lookup\nReceives the prep-form submission webhook and searches for the matching GHL contact.",
+    "content": "## 1. Intake & Lookup\nFinds the GHL contact by the typed email, then trusts the signed link token (same HMAC as the pre-fill) over it. Any token problem falls back to the email match. Since 2026-10-25.",
     "height": 480,
-    "width": 720
+    "width": 1820
    }
   },
   {
@@ -251,7 +251,7 @@
    "type": "n8n-nodes-base.stickyNote",
    "typeVersion": 1,
    "position": [
-    1444,
+    1884,
     128
    ],
    "parameters": {
@@ -268,7 +268,7 @@
    "alwaysOutputData": true,
    "onError": "continueRegularOutput",
    "position": [
-    1276,
+    1716,
     560
    ],
    "parameters": {
@@ -294,10 +294,79 @@
    }
   },
   {
+   "id": "2a3648ac-d590-405b-b516-469af032f684",
+   "name": "Build results row",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1900,
+    1180
+   ],
    "parameters": {
-    "jsCode": "// 2026-10-22: the prep form sends its signed pre-fill token (?t=). A valid signature names the\n// GHL contact for certain, so Resolve Contact can trust it over the typed email.\n// Expiry is not checked on purpose: here the token only identifies the person, it unlocks no data.\n// Fails open: any problem = no token contact, and the flow matches by email as before.\nconst out = (status, contactId = '') => [{ json: { tokenStatus: status, tokenContactId: contactId } }];\ntry {\n  const body = $('Prep Form Webhook').first().json.body || {};\n  const t = typeof body.token === 'string' ? body.token.trim() : '';\n  if (!t) return out('no_token');\n  const m = /^([A-Za-z0-9_-]{10,600})\\.([a-f0-9]{64})$/.exec(t);\n  if (!m) return out('bad_token');\n  const secret = $vars.PREP_PREFILL_SECRET;\n  if (!secret) return out('no_secret');\n  const crypto = require('crypto');\n  const expected = crypto.createHmac('sha256', secret).update(m[1]).digest('hex');\n  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(m[2]))) return out('bad_sig');\n  const claims = JSON.parse(Buffer.from(m[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));\n  const c = String((claims && claims.c) || '');\n  if (!/^[A-Za-z0-9]{15,40}$/.test(c)) return out('no_contact');\n  return out('ok', c);\n} catch (e) {\n  return out('error');\n}\n"
+    "jsCode": "// Saves the answers for the results link (?view=complete&r=<id>). Forms without a resultsId\n// (before 2026-10-23) and test emails save nothing. Runs after GHL and Slack, never blocks them.\nconst body = $('Prep Form Webhook').first().json.body || {};\nconst id = String(body.resultsId || '');\nif (!/^[A-Za-z0-9_-]{22,64}$/.test(id)) return [];\nconst contact = body.contact || {};\nconst email = String(contact.email || '').trim().toLowerCase();\n// Test addresses (Diogo, Oct 23). Plus-tags are stripped: name+anything@x counts as name@x.\nconst TEST_EMAILS = [\n  'diogo@consult-closer.com', 'diogo@roguefinance.us', 'diogomail16@gmail.com',\n  'james@roguefinance.us',\n  'paddydhennessy@gmail.com', 'patrick@roguefinance.us', 'patrick@uberoperators.com', 'patricktest@gmail.com',\n  'test@test.com',\n];\nif (TEST_EMAILS.includes(email.replace(/\\+[^@]*@/, '@'))) return [];\nconst search = $('Resolve Contact').first().json || {};\nconst ghlContactId = ((search.contacts || [])[0] || {}).id || null;\nconst t = Date.parse(body.submittedAt);\nconst submittedAt = Number.isFinite(t) ? new Date(t) : new Date();\nconst { resultsId, token, ...answers } = body;\nreturn [{ json: {\n  id,\n  ghl_contact_id: ghlContactId,\n  email: email || null,\n  closer: contact.closer ? String(contact.closer) : null,\n  answers,\n  source: 'form',\n  submitted_at: submittedAt.toISOString(),\n  expires_at: new Date(submittedAt.getTime() + 30 * 864e5).toISOString(),\n} }];\n"
+   }
+  },
+  {
+   "id": "dfbd0f7a-91ab-4315-b6a3-53fffccc1fac",
+   "name": "Save results to Supabase",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2284,
+    1180
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://epimykvlwyccfwxcsjjs.supabase.co/rest/v1/prep_results?on_conflict=id",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "apikey",
+       "value": "={{ $vars.SUPABASE_SERVICE_ROGUE_ACCEPT }}"
+      },
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $vars.SUPABASE_SERVICE_ROGUE_ACCEPT }}"
+      },
+      {
+       "name": "Prefer",
+       "value": "resolution=merge-duplicates,return=minimal"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json) }}",
+    "options": {
+     "timeout": 5000
+    }
    },
-   "name": "Check Prep Token",
+   "onError": "continueRegularOutput",
+   "retryOnFail": true,
+   "maxTries": 2,
+   "waitBetweenTries": 1000
+  },
+  {
+   "id": "d43e3579-fbbc-468e-b68b-37a05393a84d",
+   "name": "Section 3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1884,
+    1040
+   ],
+   "parameters": {
+    "content": "## 3. Save for the results link\nStores the answers in Supabase prep_results (setter-tool project) under the form's random resultsId, 30-day link. Lowest branch on purpose: runs after GHL and Slack. Test emails and old forms save nothing. A failed save never stops the note or the post.",
+    "height": 340,
+    "width": 720
+   }
+  },
+  {
+   "parameters": {
+    "jsCode": "// 2026-10-25: the prep form sends its signed pre-fill token as `token`. Same shape as the pre-fill\n// (iHFjIU1XZGlPswof): base64url(JSON {c, e, x}) + \".\" + hex HMAC-SHA256 of the first part.\n// The Crypto node after this signs payloadB64; Check Prep Token compares.\nconst body = $('Prep Form Webhook').first().json.body || {};\nconst t = typeof body.token === 'string' ? body.token.trim() : '';\nconst m = /^([A-Za-z0-9_-]{10,600})\\.([a-f0-9]{64})$/.exec(t);\nif (!m) return [{ json: { shapeOk: false, reason: t ? 'bad_token' : 'no_token', payloadB64: 'x', sig: '' } }];\nreturn [{ json: { shapeOk: true, reason: '', payloadB64: m[1], sig: m[2] } }];\n"
+   },
+   "name": "Read Prep Token",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
    "position": [
@@ -305,6 +374,37 @@
     368
    ],
    "id": "b1f0c0de-0001-4a7e-9c11-prep0token01"
+  },
+  {
+   "parameters": {
+    "action": "hmac",
+    "type": "SHA256",
+    "value": "={{ $json.payloadB64 }}",
+    "dataPropertyName": "expectedSig",
+    "secret": "={{ $vars.PREP_PREFILL_SECRET }}",
+    "encoding": "hex"
+   },
+   "name": "Sign Token for Check",
+   "type": "n8n-nodes-base.crypto",
+   "typeVersion": 1,
+   "position": [
+    872,
+    368
+   ],
+   "id": "b1f0c0de-0004-4a7e-9c11-prep0token04"
+  },
+  {
+   "parameters": {
+    "jsCode": "// A valid signature names the GHL contact for certain, so Resolve Contact can trust it over the\n// typed email. Expiry is not checked on purpose: here the token only identifies the person, it\n// unlocks no data. Fails open: any problem = no token contact, and the flow matches by email.\nconst out = (status, contactId = '') => [{ json: { tokenStatus: status, tokenContactId: contactId } }];\ntry {\n  const j = $input.first().json || {};\n  if (!j.shapeOk) return out(j.reason || 'bad_token');\n  if (!j.expectedSig || j.expectedSig !== j.sig) return out('bad_sig');\n  const claims = JSON.parse(Buffer.from(j.payloadB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));\n  const c = String((claims && claims.c) || '');\n  if (!/^[A-Za-z0-9]{15,40}$/.test(c)) return out('no_contact');\n  return out('ok', c);\n} catch (e) {\n  return out('error');\n}\n"
+   },
+   "name": "Check Prep Token",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1092,
+    368
+   ],
+   "id": "b1f0c0de-0005-4a7e-9c11-prep0token05"
   },
   {
    "parameters": {
@@ -328,7 +428,7 @@
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
    "position": [
-    872,
+    1312,
     368
    ],
    "id": "b1f0c0de-0002-4a7e-9c11-prep0token02",
@@ -349,7 +449,7 @@
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
    "position": [
-    1092,
+    1532,
     368
    ],
    "id": "b1f0c0de-0003-4a7e-9c11-prep0token03"
@@ -371,7 +471,7 @@
    "main": [
     [
      {
-      "node": "Check Prep Token",
+      "node": "Read Prep Token",
       "type": "main",
       "index": 0
      }
@@ -428,6 +528,39 @@
     ]
    ]
   },
+  "Build results row": {
+   "main": [
+    [
+     {
+      "node": "Save results to Supabase",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Prep Token": {
+   "main": [
+    [
+     {
+      "node": "Sign Token for Check",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Sign Token for Check": {
+   "main": [
+    [
+     {
+      "node": "Check Prep Token",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
   "Check Prep Token": {
    "main": [
     [
@@ -460,6 +593,11 @@
      },
      {
       "node": "Get Closer Appts",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Build results row",
       "type": "main",
       "index": 0
      }
