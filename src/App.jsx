@@ -1433,7 +1433,7 @@ export default function RoguePrepForm() {
             </p>
           </div>
 
-          {/* Order (Patrick 2026-10-25): training first, then their own numbers, then the breakouts. */}
+          {/* Order (Patrick 2026-10-25): training, share box, their own numbers, then the breakouts. */}
           <div className="done-card" id="training">
             <h2 className="done-card-title">{COMPLETION_VIDEO_TITLE}</h2>
             <p className="done-card-body">{COMPLETION_VIDEO_BODY}</p>
@@ -1450,6 +1450,8 @@ export default function RoguePrepForm() {
             </ol>
           </div>
 
+          {shareLink && income > 0 ? <ShareResults link={shareLink} closerName={closerName} /> : null}
+
           {income > 0 ? (
             <div className="done-results">
               <h2 className="done-results-title">Here&apos;s what {who} sees.</h2>
@@ -1465,7 +1467,6 @@ export default function RoguePrepForm() {
                 monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
                 income={income}
               />
-              {shareLink ? <ShareResults link={shareLink} closerName={closerName} /> : null}
             </div>
           ) : null}
 
