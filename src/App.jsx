@@ -639,7 +639,6 @@ function BreakoutVideos({ viewer, openId, onOpen }) {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
-                  {isPhone ? null : <span className="done-q-len">{v.len}</span>}
                 </div>
               ) : (
                 <button type="button" className="done-q-thumb" onClick={() => onOpen(v.id)} aria-label={"Play: " + v.q}>

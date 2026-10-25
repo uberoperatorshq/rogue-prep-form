@@ -131,7 +131,6 @@ input[type="number"] {
   font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 600;
   background: rgba(0, 0, 0, 0.8); color: #ffffff; padding: 1px 5px; border-radius: 3px;
 }
-.done-q-frame .done-q-len { bottom: auto; top: 6px; }
 .done-q-thumb {
   position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; cursor: pointer;
   border: 1px solid #2a2a2a; border-radius: 7px; overflow: hidden; background: #120a09;
