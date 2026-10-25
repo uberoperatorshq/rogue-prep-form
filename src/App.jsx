@@ -95,7 +95,8 @@ const WINS = [
   { file: "win-s78.webp", w: 900, h: 415, alt: "Client: slept well for the first time in so long after paying everything off or down." },
 ];
 
-// Trustpilot reviews, scanned 2026-10-25 (39 live, all 5 stars), newest first. Excerpts in the reviewer's
+// Trustpilot reviews, scanned 2026-10-25 (39 live, all 5 stars), newest first; the page shows the newest 9 and links to
+// Trustpilot for the rest (Patrick 2026-10-25). Excerpts in the reviewer's
 // own words, cut only, never reworded. Held back for a compliance call: Kara Turrentine, Lissetth Jarquin,
 // Jennifer Crabtree (credit-score claims), Daniel Geyer (investment returns).
 const REVIEWS = [
@@ -1151,7 +1152,6 @@ export default function RoguePrepForm() {
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
-  const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
     if (!paramToken) return;
@@ -1499,7 +1499,7 @@ export default function RoguePrepForm() {
             </h2>
             <p className="done-proof-sub">Here&apos;s what people say after sitting where you&apos;re sitting now.</p>
             <div className="done-reviews">
-              {(showAllReviews ? REVIEWS : REVIEWS.slice(0, 9)).map((r) => (
+              {REVIEWS.slice(0, 9).map((r) => (
                 <div className="done-review" key={r.name}>
                   <div className="done-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                   <div className="done-review-name">{r.name}</div>
@@ -1508,11 +1508,14 @@ export default function RoguePrepForm() {
                 </div>
               ))}
             </div>
-            {showAllReviews ? null : (
-              <button type="button" className="done-share-btn done-reviews-more" onClick={() => setShowAllReviews(true)}>
-                Show all {REVIEWS.length} reviews
-              </button>
-            )}
+            <a
+              className="done-share-btn done-reviews-more"
+              href="https://www.trustpilot.com/review/roguefinance.us"
+              target="_blank"
+              rel="noreferrer"
+            >
+              See all reviews on Trustpilot
+            </a>
           </div>
 
           <WinsWall />
