@@ -12,44 +12,67 @@ const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?pl
 const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
 const COMPLETION_VIDEO_BODY =
   "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
-const COMPLETION_VIDEO_COVERS = [
-  "Why your money does what it does, and why a budget was never going to fix it",
-  "The exact system we build for clients, account by account",
-  "How the call runs, and what we tell you if it is not a fit",
+// Chapters (2026-10-25, Oct 20 revamp plan): engagement on the 23:49 cut is 57%, so people can
+// jump to the part they care about. Seconds checked against the Wistia captions; a tap reloads
+// the player at that second.
+const TRAINING_CHAPTERS = [
+  { t: 0, label: "Why a budget was never going to fix it" },
+  { t: 249, label: "Does one more dollar make your life better or worse?" },
+  { t: 482, label: "The system we build, account by account" },
+  { t: 853, label: "\"Shouldn't every spare dollar just go to the debt?\"" },
+  { t: 1024, label: "What the call is for, and what happens if it isn't a fit" },
+  { t: 1064, label: "Why your partner needs to be on the call" },
+  { t: 1140, label: "People who sat where you are now" },
 ];
 
 // Six break-out videos from Andy, one question each. Top row bank access,
 // coaching, affording it (moved up 2026-10-03, best completion rate); bottom
 // row partner, debt, deciding. Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
+// Run times from Wistia (2026-10-25), 10:36 in total. Stills = each media's custom thumbnail.
+const BREAKOUT_SUB = "Six short answers from Andy. All six run under 11 minutes.";
+const PARTNER_VIDEO_ID = "ywdmppplme";
+const WISTIA_STILL = "https://embed-ssl.wistia.com/deliveries/";
 const BREAKOUT_VIDEOS = [
   {
     id: "r90kiktykf",
+    len: "0:52",
+    still: "5b1ccf04d09d6387875a9fda0b40fab9",
     q: "Do you get access to my bank accounts?",
     a: "No. Never. Your accounts, your logins, a coach beside you while you click.",
   },
   {
     id: "p25usn12bi",
+    len: "2:12",
+    still: "d9f783991b8433dd77cd866e6db7c8e5",
     q: "Would you be coaching me personally?",
     a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
   },
   {
     id: "ncze2s7sqh",
+    len: "1:54",
+    still: "9a962b60838645f3ab609ec6c4c55f7e",
     q: "What if I can't afford this right now?",
     a: "Don't do the math against today's balance. What standing still costs, in interest.",
   },
   {
     id: "ywdmppplme",
+    len: "1:05",
+    still: "169985d1352f3993adabbb08dc29d797",
     q: "What if I want to do this without my partner?",
     a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
   },
   {
     id: "x1qh1guv4j",
+    len: "1:21",
+    still: "b62863bf8a7d1a00317dfa90daa11b5e",
     q: "Is this debt consolidation? Or debt settlement?",
     a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
   },
   {
     id: "w9d1mfco1k",
+    len: "3:08",
+    still: "883b88b099b8ee185fdbb0db11ed5da3",
     q: "Do I have to decide on the call?",
     a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
   },
@@ -536,13 +559,16 @@ function Header() {
   );
 }
 
-function VideoCard({ viewer }) {
+function VideoCard({ viewer, startAt }) {
+  // startAt (seconds) comes from a chapter tap: the player reloads there and starts.
+  const src = startAt == null ? COMPLETION_VIDEO_URL : COMPLETION_VIDEO_URL + "&time=" + startAt + "&autoPlay=true";
   return (
     <div className="done-video-frame">
       {COMPLETION_VIDEO_URL ? (
         <iframe
+          key={startAt == null ? "start" : startAt}
           style={styles.iframe}
-          src={withViewer(COMPLETION_VIDEO_URL, viewer)}
+          src={withViewer(src, viewer)}
           title={COMPLETION_VIDEO_TITLE}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -559,30 +585,78 @@ function VideoCard({ viewer }) {
   );
 }
 
-function BreakoutVideos({ viewer }) {
+function fmtClock(sec) {
+  return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+}
+
+// Phone width matches the 640px breakpoint in index.css.
+function useIsPhone() {
+  const query = "(max-width: 640px)";
+  const [isPhone, setIsPhone] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const m = window.matchMedia(query);
+    const on = () => setIsPhone(m.matches);
+    m.addEventListener ? m.addEventListener("change", on) : m.addListener(on);
+    return () => (m.removeEventListener ? m.removeEventListener("change", on) : m.removeListener(on));
+  }, []);
+  return isPhone;
+}
+
+function breakoutSrc(id, viewer, autoPlay) {
+  return withViewer(
+    `https://fast.wistia.net/embed/iframe/${id}?videoFoam=true&playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true` +
+      (autoPlay ? "&autoPlay=true" : ""),
+    viewer
+  );
+}
+
+// Oct 20 revamp plan: 20 of 44 submitters played any breakout, but players finish them. Every
+// tile shows its run time; on phone the six are compact rows (still + question) and the player
+// loads when tapped, so all six questions fit about one screen.
+function BreakoutVideos({ viewer, openId, onOpen }) {
+  const isPhone = useIsPhone();
   return (
-    <div className="done-qs">
+    <div className="done-qs" id="breakouts">
       <h2 className="done-qs-title">{BREAKOUT_TITLE}</h2>
+      <p className="done-qs-sub">{BREAKOUT_SUB}</p>
       <div className="done-qs-grid">
-        {BREAKOUT_VIDEOS.map((v) => (
-          <div className="done-q" key={v.id}>
-            <div className="done-video-frame done-q-frame">
-              <iframe
-                style={styles.iframe}
-                src={withViewer(
-                  `https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`,
-                  viewer
-                )}
-                title={v.q}
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+        {BREAKOUT_VIDEOS.map((v) => {
+          const open = !isPhone || openId === v.id;
+          return (
+            <div
+              className={"done-q" + (v.id === PARTNER_VIDEO_ID ? " done-q-hot" : "") + (open ? "" : " done-q-row")}
+              key={v.id}
+              id={"breakout-" + v.id}
+            >
+              {open ? (
+                <div className="done-video-frame done-q-frame">
+                  <iframe
+                    style={styles.iframe}
+                    src={breakoutSrc(v.id, viewer, isPhone)}
+                    title={v.q}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                  {isPhone ? null : <span className="done-q-len">{v.len}</span>}
+                </div>
+              ) : (
+                <button type="button" className="done-q-thumb" onClick={() => onOpen(v.id)} aria-label={"Play: " + v.q}>
+                  <img src={WISTIA_STILL + v.still + ".jpg?image_crop_resized=320x180"} alt="" loading="lazy" />
+                  <span className="done-q-play" />
+                  <span className="done-q-len">{v.len}</span>
+                </button>
+              )}
+              <div className="done-q-text" onClick={open ? undefined : () => onOpen(v.id)}>
+                <div className="done-q-label">{v.q}</div>
+                <p className="done-q-teaser">{v.a}</p>
+              </div>
             </div>
-            <div className="done-q-label">{v.q}</div>
-            <p className="done-q-teaser">{v.a}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -771,6 +845,11 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
+  // Return visit (2026-10-25): the results link loaded saved answers, so the page leads with them.
+  const [returnView, setReturnView] = useState(false);
+  // Completion page: chapter the training starts from, breakout opened on phone.
+  const [trainingStart, setTrainingStart] = useState(null);
+  const [openBreakout, setOpenBreakout] = useState(null);
 
   useEffect(() => {
     if (!paramToken) return;
@@ -836,7 +915,11 @@ export default function RoguePrepForm() {
       .then((r) => r.json())
       .then((j) => {
         if (!j || !j.ok) return;
-        if (j.annualHouseholdIncome != null) setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
+        if (j.annualHouseholdIncome != null) {
+          setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
+          // The snapshot needs income, so only lead with it when there is some.
+          if (Number(j.annualHouseholdIncome) > 0) setReturnView(true);
+        }
         if (j.retirement401k != null) setRetirement401k(String(j.retirement401k));
         if (Number.isInteger(j.age)) setSavedAge(j.age);
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
@@ -1022,43 +1105,87 @@ export default function RoguePrepForm() {
   // ---------------- Completion ----------------
   if (step === 5) {
     const viewer = looksLikeEmail(email) ? email : loadViewer();
+    const jumpTo = (id) => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    const playChapter = (t) => {
+      setTrainingStart(t);
+      jumpTo("training");
+    };
+    const openPartner = () => {
+      setOpenBreakout(PARTNER_VIDEO_ID);
+      jumpTo("breakout-" + PARTNER_VIDEO_ID);
+    };
+    const snapshot = (
+      <RetirementSnapshot
+        income={parseNumOrNull(annualHouseholdIncome)}
+        retirement={parseNumOrNull(retirement401k)}
+        knownAge={prefill.age || savedAge}
+      />
+    );
+    const strategist = closerName ? closerName : "Your strategist";
     return (
       <div className="done-page">
         <div className="done-inner">
           <Header />
           <div className="done-hero">
-            <h1 className="done-title">
-              Form done. <span className="done-title-accent">One more thing.</span>
-            </h1>
-            <p className="done-body">
-              {closerName
-                ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
-                : "Your strategist will go through your answers before the call."}{" "}
-              Do the one thing below and the call starts from your numbers.
-            </p>
+            {returnView ? (
+              <>
+                <h1 className="done-title">
+                  Welcome back. <span className="done-title-accent">Your answers are saved.</span>
+                </h1>
+                <p className="done-body">
+                  {strategist} has them for the call. Your snapshot is first, the training and
+                  Andy&apos;s answers are below it.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="done-title">
+                  Form done. <span className="done-title-accent">One more thing.</span>
+                </h1>
+                <p className="done-body">
+                  {closerName
+                    ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
+                    : "Your strategist will go through your answers before the call."}
+                </p>
+              </>
+            )}
           </div>
-          <div className="done-card">
-            <div className="done-tag">Last step</div>
+
+          {returnView ? <div className="done-snap-first">{snapshot}</div> : null}
+
+          <div className="done-todo">
+            <button type="button" className="done-todo-item" onClick={() => jumpTo("training")}>
+              <b>Watch Andy&apos;s pre-call training.</b>
+              24 minutes, about 16 at the speed it starts on. Jump to the part you care about.
+            </button>
+            <button type="button" className="done-todo-item" onClick={openPartner}>
+              <b>If you share money with a partner, they join the call too.</b>
+              Both of you, same room. <span className="done-todo-link">Andy explains why in 66 seconds</span>
+            </button>
+          </div>
+
+          <div className="done-card" id="training">
             <h2 className="done-card-title">{COMPLETION_VIDEO_TITLE}</h2>
             <p className="done-card-body">{COMPLETION_VIDEO_BODY}</p>
-            <ul className="done-covers">
-              {COMPLETION_VIDEO_COVERS.map((t) => (
-                <li key={t}>
-                  <span className="done-covers-check">&#10003;</span>
-                  {t}
+            <VideoCard viewer={viewer} startAt={trainingStart} />
+            <ol className="done-chapters">
+              {TRAINING_CHAPTERS.map((c) => (
+                <li key={c.t}>
+                  <button type="button" onClick={() => playChapter(c.t)}>
+                    <span className="done-chapter-t">{fmtClock(c.t)}</span>
+                    {c.label}
+                  </button>
                 </li>
               ))}
-            </ul>
-            <VideoCard viewer={viewer} />
+            </ol>
           </div>
 
-          <BreakoutVideos viewer={viewer} />
+          <BreakoutVideos viewer={viewer} openId={openBreakout} onOpen={setOpenBreakout} />
 
-          <RetirementSnapshot
-            income={parseNumOrNull(annualHouseholdIncome)}
-            retirement={parseNumOrNull(retirement401k)}
-            knownAge={prefill.age || savedAge}
-          />
+          {returnView ? null : snapshot}
 
           <div className="done-stats">
             <div className="done-stat">
