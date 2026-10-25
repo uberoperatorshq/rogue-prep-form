@@ -939,6 +939,9 @@ export default function RoguePrepForm() {
 
     const payload = {
       resultsId,
+      // Signed booking-link token (2026-10-25). n8n trusts it over the typed email to find the
+      // GHL contact. It is dropped before the answers are saved for the results link.
+      token: paramToken || null,
       contact: {
         fullName: fullName.trim(),
         email: email.trim(),
