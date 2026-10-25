@@ -47,6 +47,7 @@ http
           creditCardDebt: s.creditCardDebt ?? null,
           personalLoanDebt: s.personalLoanDebt ?? null,
           monthlyDebtPayments: s.monthlyDebtPayments ?? null,
+          monthlyRentMortgage: s.monthlyRentMortgage ?? null,
         });
       }
       // Any ?t= value counts as a valid token here: returns a setter call with age 44.

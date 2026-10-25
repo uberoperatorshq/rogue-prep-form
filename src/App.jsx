@@ -896,7 +896,7 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
         {snap ? (
           <div className="done-snap-grid">
             <div className="done-snap-cell">
-              <div className="done-snap-k">Common benchmark {snap.label}</div>
+              <div className="done-snap-k">Common benchmark {snap.label}*</div>
               <div className="done-snap-v">{shortMoney(snap.target)}</div>
               <div className="done-snap-m">{x(snap.targetMultiple)}</div>
             </div>
@@ -917,10 +917,9 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
           </div>
         ) : null}
         <p className="done-snap-note">
-          Uses the retirement balance and household income you entered. Home equity is not counted.
-          Benchmark: Fidelity&apos;s savings-by-age guideline (1x income by 30, 3x by 40, 6x by 50,
-          8x by 60, 10x by 67). A guideline, not advice for your situation. Your strategist can walk
-          through it with you on the call.
+          *Fidelity&apos;s savings-by-age guideline: 1x income by 30, 3x by 40, 6x by 50, 8x by 60,
+          10x by 67. Uses the retirement balance and household income you entered; home equity is not
+          counted. A guideline, not advice for your situation.
         </p>
       </div>
     </div>
@@ -931,8 +930,10 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
 // the rates below are assumptions, not the prospect's own, and the copy and the guideline need
 // sign-off before this merges. Uses the debt answers from the form; the live results link does
 // not return debts (by design), so on a reopened link it only shows on the local mock.
-const DEBT_CLOCK_APR = { card: 0.22, loan: 0.12 }; // assumed, roughly US averages
-const DEBT_PAYMENT_GUIDELINE = 0.36; // common lender guideline: debt payments under 36% of gross income
+// Rates: Federal Reserve G.19 (released 2026-10-07, August data): 22.36% card accounts assessed interest,
+// 11.90% 24-month personal loans. 36%: Fannie Mae Selling Guide B3-6-02, max total DTI (manual underwriting).
+const DEBT_CLOCK_APR = { card: 0.22, loan: 0.12 };
+const DEBT_PAYMENT_GUIDELINE = 0.36;
 
 function debtFreeMonths(balance, monthlyRate, payment) {
   if (balance <= 0) return 0;
@@ -941,7 +942,7 @@ function debtFreeMonths(balance, monthlyRate, payment) {
   return Math.ceil(-Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate));
 }
 
-function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
+function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income }) {
   const card = cardDebt > 0 ? cardDebt : 0;
   const loan = loanDebt > 0 ? loanDebt : 0;
   const total = card + loan;
@@ -956,14 +957,16 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
     d.setMonth(d.getMonth() + months);
     freeLabel = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
   }
-  const share = income > 0 && monthlyPayment > 0 ? (monthlyPayment * 12) / income : null;
+  // Fannie Mae's 36% counts the housing payment too, so rent or mortgage goes in with the debt payments.
+  const ratioPayments = (monthlyPayment > 0 ? monthlyPayment : 0) + (housingPayment > 0 ? housingPayment : 0);
+  const share = income > 0 && ratioPayments > 0 ? (ratioPayments * 12) / income : null;
   const money = (n) => "$" + Math.round(n).toLocaleString();
   return (
     <div className="done-debt">
       <h2 className="done-qs-title">Your debt clock</h2>
       <div className="done-snap-card">
         <div className="done-debt-tick">
-          <div className="done-debt-tick-v">{money(yearlyInterest)} a year</div>
+          <div className="done-debt-tick-v">{money(yearlyInterest)} a year*</div>
           <div className="done-debt-tick-k">in interest at these balances</div>
         </div>
         <div className="done-snap-grid">
@@ -980,17 +983,24 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, income }) {
             </div>
           </div>
           <div className="done-snap-cell">
-            <div className="done-snap-k">Where you&apos;d want to be</div>
+            <div className="done-snap-k">Where you&apos;d want to be**</div>
             <div className="done-snap-v">Under {Math.round(DEBT_PAYMENT_GUIDELINE * 100)}%</div>
             <div className={"done-snap-m" + (share !== null && share > DEBT_PAYMENT_GUIDELINE ? " done-snap-gap" : "")}>
-              {share === null ? "of income on debt payments" : "of income on debt payments. Yours: " + Math.round(share * 100) + "%"}
+              {share === null
+                ? "of income on debt and housing payments"
+                : "of income on debt and housing payments. Yours: " + Math.round(share * 100) + "%"}
             </div>
           </div>
         </div>
         <p className="done-snap-note">
-          Mockup. Assumes {Math.round(DEBT_CLOCK_APR.card * 100)}% a year on cards and{" "}
-          {Math.round(DEBT_CLOCK_APR.loan * 100)}% on personal loans, and that your monthly debt payments all go to these
-          balances. Your real rates will differ. Your strategist can walk through it with you on the call.
+          *Assumes {Math.round(DEBT_CLOCK_APR.card * 100)}% a year on cards and {Math.round(DEBT_CLOCK_APR.loan * 100)}% on
+          personal loans, close to the latest US averages (Federal Reserve G.19, August 2026: 22.36% on card
+          accounts paying interest, 11.90% on 24-month personal loans), and that your monthly debt payments go to
+          these balances. Your real rates will differ.
+          <br />
+          **Fannie Mae&apos;s maximum total debt-to-income ratio for manually underwritten mortgages (Selling Guide
+          B3-6-02): monthly debt payments plus the housing payment, divided by gross monthly income. Your rent or
+          mortgage counts as the housing payment here.
         </p>
       </div>
     </div>
@@ -1219,6 +1229,7 @@ export default function RoguePrepForm() {
         if (j.creditCardDebt != null) setCreditCardDebt(String(j.creditCardDebt));
         if (j.personalLoanDebt != null) setPersonalLoanDebt(String(j.personalLoanDebt));
         if (j.monthlyDebtPayments != null) setMonthlyDebtPayments(String(j.monthlyDebtPayments));
+        if (j.monthlyRentMortgage != null) setMonthlyRentMortgage(String(j.monthlyRentMortgage));
         if (Number.isInteger(j.age)) setSavedAge(j.age);
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
         if (looksLikeEmail(j.email)) setEmail(j.email.trim());
@@ -1417,11 +1428,9 @@ export default function RoguePrepForm() {
       typeof window !== "undefined" && sharedId
         ? window.location.origin + window.location.pathname + "?view=complete&r=" + sharedId
         : "";
-    const who = closerName || "your strategist";
     return (
       <div className="done-page">
         <div className="done-inner">
-          <Header />
           <div className="done-hero">
             <h1 className="done-title">
               Form done. <span className="done-title-accent">One more thing.</span>
@@ -1454,8 +1463,6 @@ export default function RoguePrepForm() {
 
           {income > 0 ? (
             <div className="done-results">
-              <h2 className="done-results-title">Here&apos;s what {who} sees.</h2>
-              <p className="done-proof-sub">Your numbers from the form. {closerName || "Your strategist"} goes through them with you on the call.</p>
               <RetirementSnapshot
                 income={income}
                 retirement={parseNumOrNull(retirement401k)}
@@ -1465,6 +1472,7 @@ export default function RoguePrepForm() {
                 cardDebt={parseNumOrNull(creditCardDebt)}
                 loanDebt={parseNumOrNull(personalLoanDebt)}
                 monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
+                housingPayment={parseNumOrNull(monthlyRentMortgage)}
                 income={income}
               />
             </div>
@@ -1514,6 +1522,21 @@ export default function RoguePrepForm() {
           </div>
 
           <WinsWall />
+
+          {/* DRAFT legal footer (2026-10-25): wording matches Rogue's earnings disclaimer; needs Patrick's sign-off. */}
+          <footer className="done-legal">
+            <p>
+              Rogue Finance (AWH Consulting LLC) offers financial education and coaching. Nothing on this page is
+              financial, tax, legal or investment advice for your situation. The retirement and debt figures are rough
+              estimates from the numbers you entered, using the guidelines and averages cited above. Reviews and client
+              messages show what those clients did and said. Your results will differ, and no outcome is guaranteed.
+            </p>
+            <p className="done-legal-links">
+              <a href="https://roguefinance.us/terms-of-use-9582" target="_blank" rel="noreferrer">Terms of Use</a>
+              <a href="https://roguefinance.us/online-privacy-policy-4749" target="_blank" rel="noreferrer">Privacy Policy</a>
+              <a href="https://roguefinance.us/earnings-disclaimer-5151" target="_blank" rel="noreferrer">Earnings Disclaimer</a>
+            </p>
+          </footer>
         </div>
       </div>
     );
