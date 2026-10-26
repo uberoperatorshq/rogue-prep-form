@@ -926,10 +926,10 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
   );
 }
 
-// Debt clock. MOCKUP (Patrick 2026-10-25), built to show the customer journey, not approved:
-// the rates below are assumptions, not the prospect's own, and the copy and the guideline need
-// sign-off before this merges. Uses the debt answers from the form; the live results link does
-// not return debts (by design), so on a reopened link it only shows on the local mock.
+// Debt clock (Patrick 2026-10-25, shipped 10/26). Uses the debt answers from the form with assumed
+// rates (cited below), not the prospect's own. Until the results lookup returns the debt fields
+// (plans/2026-10-25-rogue-prep-results-link-debts.md), it shows right after submit only, and stays
+// hidden on a reopened link.
 // Rates: Federal Reserve G.19 (released 2026-10-07, August data): 22.36% card accounts assessed interest,
 // 11.90% 24-month personal loans. 36%: Fannie Mae Selling Guide B3-6-02, max total DTI (manual underwriting).
 const DEBT_CLOCK_APR = { card: 0.22, loan: 0.12 };
