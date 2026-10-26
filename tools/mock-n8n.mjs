@@ -43,6 +43,11 @@ http
           email: s.contact && s.contact.email,
           age: s.age ?? null,
           ageSource: s.ageSource ?? null,
+          // Debt clock MOCKUP only: the live n8n lookup does NOT return debts.
+          creditCardDebt: s.creditCardDebt ?? null,
+          personalLoanDebt: s.personalLoanDebt ?? null,
+          monthlyDebtPayments: s.monthlyDebtPayments ?? null,
+          monthlyRentMortgage: s.monthlyRentMortgage ?? null,
         });
       }
       // Any ?t= value counts as a valid token here: returns a setter call with age 44.

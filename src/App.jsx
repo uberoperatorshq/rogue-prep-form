@@ -12,80 +12,268 @@ const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?pl
 const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
 const COMPLETION_VIDEO_BODY =
   "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
-const COMPLETION_VIDEO_COVERS = [
-  "Why your money does what it does, and why a budget was never going to fix it",
-  "The exact system we build for clients, account by account",
-  "How the call runs, and what we tell you if it is not a fit",
+// Chapters (2026-10-25, Oct 20 revamp plan): engagement on the 23:49 cut is 57%, so people can
+// jump to the part they care about. Seconds checked against the Wistia captions; a tap reloads
+// the player at that second.
+const TRAINING_CHAPTERS = [
+  { t: 0, label: "Why a budget was never going to fix it" },
+  { t: 249, label: "Does one more dollar make your life better or worse?" },
+  { t: 482, label: "The system we build, account by account" },
+  { t: 853, label: "\"Shouldn't every spare dollar just go to the debt?\"" },
+  { t: 1024, label: "What the call is for, and what happens if it isn't a fit" },
+  { t: 1064, label: "Why your partner needs to be on the call" },
+  { t: 1140, label: "People who sat where you are now" },
 ];
 
 // Six break-out videos from Andy, one question each. Top row bank access,
 // coaching, affording it (moved up 2026-10-03, best completion rate); bottom
 // row partner, debt, deciding. Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
+// Run times from Wistia (2026-10-25), rounded to the nearest second like the Wistia player shows them; 10:36 in total. Stills = each media's custom thumbnail.
+const PARTNER_VIDEO_ID = "ywdmppplme";
+const WISTIA_STILL = "https://embed-ssl.wistia.com/deliveries/";
 const BREAKOUT_VIDEOS = [
   {
     id: "r90kiktykf",
+    len: "0:52",
+    still: "5b1ccf04d09d6387875a9fda0b40fab9",
     q: "Do you get access to my bank accounts?",
     a: "No. Never. Your accounts, your logins, a coach beside you while you click.",
   },
   {
     id: "p25usn12bi",
+    len: "2:13",
+    still: "d9f783991b8433dd77cd866e6db7c8e5",
     q: "Would you be coaching me personally?",
     a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
   },
   {
     id: "ncze2s7sqh",
+    len: "1:55",
+    still: "9a962b60838645f3ab609ec6c4c55f7e",
     q: "What if I can't afford this right now?",
     a: "Don't do the math against today's balance. What standing still costs, in interest.",
   },
   {
     id: "ywdmppplme",
+    len: "1:06",
+    still: "169985d1352f3993adabbb08dc29d797",
     q: "What if I want to do this without my partner?",
     a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
   },
   {
     id: "x1qh1guv4j",
+    len: "1:21",
+    still: "b62863bf8a7d1a00317dfa90daa11b5e",
     q: "Is this debt consolidation? Or debt settlement?",
     a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
   },
   {
     id: "w9d1mfco1k",
+    len: "3:09",
+    still: "883b88b099b8ee185fdbb0db11ed5da3",
     q: "Do I have to decide on the call?",
     a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
   },
 ];
 
-// Verbatim Trustpilot reviews, same six the GHL confirmation page shows first.
+// Client wins wall: Slack screenshots from the client channels, names blurred.
+// Picked 2026-10-19 from wins-web.zip (85 files, 34 leaked a name or face and
+// were dropped). Files in public/prep-assets/wins so the /prep proxy serves them.
+// Added at the bottom 2026-10-25 (Patrick). win-s88 (credit score up 75 points) held back for a
+// compliance call, same as the credit-score reviews.
+const WINS_TITLE = "From our client channel";
+const WINS_SUB = "Real messages from Rogue clients, as they posted them. Names blurred for privacy. Individual experiences, results vary.";
+const WINS = [
+  { file: "win-s04.webp", w: 900, h: 294, alt: "Client: my mind is freed from the lender, the system is in place and my wife is on board." },
+  { file: "win-s36.webp", w: 900, h: 400, alt: "Client: paid an $800 car repair without putting it on credit, and didn't panic." },
+  { file: "win-s92.webp", w: 646, h: 398, alt: "Client couple: just over $8,000 left across our accounts after the month's major bills." },
+  { file: "win-s58.webp", w: 900, h: 395, alt: "Client: I don't even remember when payday is now, and I spend on half the stuff I used to." },
+  { file: "win-s73.webp", w: 900, h: 194, alt: "Client: got everything automated and organized, so much relief." },
+  { file: "win-s74.webp", w: 900, h: 323, alt: "Client: started in debt with negative cash flow, now positive cash flow and three quarters of a month in savings." },
+  { file: "win-s90.webp", w: 900, h: 577, alt: "Client: husband's $900 bonus went automatically into savings." },
+  { file: "win-s78.webp", w: 900, h: 415, alt: "Client: slept well for the first time in so long after paying everything off or down." },
+];
+
+// Trustpilot reviews, scanned 2026-10-25 (39 live, all 5 stars), newest first; the page shows the newest 9 and links to
+// Trustpilot for the rest (Patrick 2026-10-25). Excerpts in the reviewer's
+// own words, cut only, never reworded. Held back for a compliance call: Kara Turrentine, Lissetth Jarquin,
+// Jennifer Crabtree (credit-score claims), Daniel Geyer (investment returns).
 const REVIEWS = [
   {
-    "name": "Emma Skelton",
-    "date": "March 28, 2026",
-    "text": "Andy was just fabulous. He was gracious, non-judgemental and patient as we worked through all our finances. Fast forward a year, and we paid off over $100k in car loans and other debt, and never felt deprived. This year, we have been able to put over $200,000 into our retirement accounts, something that seemed impossible just a few years ago. 100% recommended!!"
+    "name": "Gary",
+    "date": "October 22, 2026",
+    "text": "I own a couple of small businesses with large sums of money constantly moving in and out. For the past 12 years, I've been so focused on managing cash flow on the business side that I let my personal finances get away from me. Rogue Finance changed that. In just four months, my personal finances are night and day compared to where they were."
+  },
+  {
+    "name": "Erik Thomas",
+    "date": "October 20, 2026",
+    "text": "Rogue Finance was one of the best financial moves I ever made. They really helped me get my financials in order and the system really works! Its super flexible and can expand or contract as needed. Thanks Andy and Joanna for all your help!"
+  },
+  {
+    "name": "Dahianna Soris-Becerril",
+    "date": "October 20, 2026",
+    "text": "After years and yrs of trying to budget using spreadsheets, every dollar app, and YNAB app, I had failed. One simple worksheet where I could see everything and a simple effective system that sets everything on autopilot was the missing piece to finally put us on The right track! While we still have a lot to accomplish, we can breathe easier knowing we have a solid plan to pay off debt, to save for emergencies and invest in our future!"
+  },
+  {
+    "name": "Michael Kemper",
+    "date": "September 28, 2026",
+    "text": "We started this program at a desperate place in our finances. We were drowning in debt payments, high interest rates, unable to keep track of everything and over-drafting left and right. I kept saying, “I make too much money to be living like this!” We haven’t over-drafted once since we started, which is huge. We feel so much lighter, and have hope for our financial future now."
+  },
+  {
+    "name": "Rich F",
+    "date": "September 25, 2026",
+    "text": "There are other companies offering programs and apps, etc. but this group is real and genuine, extremely supportive, and they actually care about your success long term. Changed my life. Wish I had this system 30 years ago!"
+  },
+  {
+    "name": "Nick",
+    "date": "September 16, 2026",
+    "text": "Fantastic coaching and support throughout the entire process. Joanna was amazing :) None of this is rocket science at the end of the day, but much of us lack the ability and confidence to ACT on the information in front of us. You just need a push and someone to get you started."
+  },
+  {
+    "name": "Mari Hayes Cockerell",
+    "date": "September 14, 2026",
+    "text": "Rogue Finance is legit! Before I got to work with his team, I still freaked out a little and wondered if I had been an idiot and fallen for a scam! But just a couple sessions in, things were turning around for us. So glad I made this decision!"
+  },
+  {
+    "name": "Ainsley Watson",
+    "date": "September 13, 2026",
+    "text": "This program was great. I got paired with some amazing coaches and they not only addressed the financial piece but also helped me with the emotional side of money. I’m in a place now where I feel better able to make decisions and my money is working for me."
+  },
+  {
+    "name": "Michele Ponik",
+    "date": "September 8, 2026",
+    "text": "Life changing program. Lots of support to set you up to succeed. I can’t believe the 90 days are up already but I’ve learned so much and it’s greatly reduced my anxiety surrounding money. I finally feel in control of my money for the first time in my life."
+  },
+  {
+    "name": "Jackie Feland",
+    "date": "August 16, 2026",
+    "text": "My husband and I have both worked full time while raising 3 sweet kiddos and no matter how much more money we made a year we always caught ourselves living pay check to pay check. With the systems Joanna and the team gave us we were able to put thousands in savings in 90 days. I was skeptical the first week if it would work for our family and lifestyle but it immediately paid off!"
+  },
+  {
+    "name": "Michael Bell",
+    "date": "July 26, 2026",
+    "text": "We came to Rogue Finance feeling completely underwater. Our bills were scattered everywhere, we were constantly worried about overdrafting, and we couldn't see a clear picture of our own money. They helped us build a simple, automated flow where our paychecks route themselves to the right places. For the first time we actually understand where every dollar goes."
+  },
+  {
+    "name": "Suzanne Whitlock",
+    "date": "July 25, 2026",
+    "text": "I had to have house repair & didn't realize how much money I made & how much I was spending. Andy & Jennifer are so smart, savvy & sweet. I feel I learned invaluable info that is changing my financial life & I am so grateful."
+  },
+  {
+    "name": "Frank Curcio",
+    "date": "July 23, 2026",
+    "text": "My wife and I both make good money. We have 2 teen kids and couldn’t understand how the negative account balances started happening. Today we are $1K+ in positive cash flow with cars paid off and actually talking about building up our savings from one month to 3 or even 6 months."
+  },
+  {
+    "name": "Dominic Phelps",
+    "date": "July 15, 2026",
+    "text": "Rogue Team is nothing short of amazing. There knowledge, the relatability, and realistic goal setting makes you feel like it is achievable. I highly recommend this program for any person looking to change their relationship with money!"
+  },
+  {
+    "name": "Matthew Birdsall",
+    "date": "July 1, 2026",
+    "text": "I’m a single parent of three with a great job, yet I was still constantly living paycheck to paycheck. I had tried to budget for years with zero success. They taught me how to stop judging myself, and I finally dropped the guilt of saying, \"I shouldn't have bought that.\" Today, I am actively hitting savings goals for my kids, and our end-of-summer travel plans are fully funded."
+  },
+  {
+    "name": "Trace",
+    "date": "June 18, 2026",
+    "text": "Rogue Finance, Andy and Joanna helped me understand there’s a better way to manage money by paying myself first!!! It’s sounds simple but there’s a process / transition that they walk you through every step of the way!!"
+  },
+  {
+    "name": "Dave",
+    "date": "June 16, 2026",
+    "text": "I cannot say enough good things about Rogue Finance and their team. From the very beginning, they have provided an exceptional level of service, communication, and personal attention. The team’s responsiveness, professionalism, and genuine care for their clients are evident in every interaction."
+  },
+  {
+    "name": "Melissa Trask",
+    "date": "May 27, 2026",
+    "text": "Before this class, I was stressing about money multiple times a day. Now I check my account once a week, guilt-free. The program makes saving money completely effortless while still ensuring I have money left over to spend. My only real regret is that I didn't find this program 10 years ago!"
+  },
+  {
+    "name": "Ken F",
+    "date": "May 1, 2026",
+    "text": "Andy’s Automatic Money (AMF) course and system just works. They helped me get out of a reactive financial posture and into a proactive planner archetype. I’m super grateful especially to my knowledgeable coach Joanna for successfully hand holding me through the process."
+  },
+  {
+    "name": "David MacNiven",
+    "date": "April 17, 2026",
+    "text": "It's hard to admit to gaps in knowledge around personal finance and being successful professionally while struggling to manage debt and savings for my family. Andy and Joanna at Rogue Finance are incredible and the system they teach is one that brings awareness and clarity to managing money."
   },
   {
     "name": "Gabe Smith",
     "date": "April 16, 2026",
-    "text": "Andy's coaching helped us to completely rethink the way we handle our business and personal finance. He showed us the power of automation and the freedom of systems that work. But the biggest payoff didn't have anything to do with money. His thoughtful, kind, direct, and relationally attuned approach provided a pathway for growth in our marriage too."
+    "text": "Andy's coaching helped us to completely rethink the way we handle our business and personal finance. He showed us the power of automation and the freedom of systems that work. But the biggest payoff of our time with Andy didn't have anything to do with money. His thoughtful, kind, direct, and relationally attuned approach provided a pathway for growth in our marriage too."
   },
   {
-    "name": "Bridget Finn",
-    "date": "January 28, 2026",
-    "text": "I was never good with money. I had a lot of shame around it. Over the years my income increased but I always found myself in the same paycheck-to-paycheck cycle. Andy's \"recipe\" helped me build a system where my money works for me. My bills are paid automatically. My savings are growing automatically. The stress and fear has been replaced with pride!"
+    "name": "josh acuff",
+    "date": "April 15, 2026",
+    "text": "As a small business owner, I feel more at peace with our financial situation now than I have in the past 5 years. Don't walk, run to get started and take that first step to changing your relationship to your finances for the rest of your life."
   },
   {
-    "name": "Lea Murrell",
-    "date": "March 11, 2026",
-    "text": "Andy, Joanna, and the Rogue Financial process have changed my life so incredibly significantly in three short months! Following a divorce, some other financial setbacks, and largely just not being very financially savvy I was not in a good place. The program itself, the communication, and the encouragement was exactly what I needed. I hate to think about where I would be if I never started it."
+    "name": "Emma Skelton",
+    "date": "March 28, 2026",
+    "text": "Andy was just fabulous. He was gracious, non-judgemental and patient as we worked through all our finances. Fast forward a year, and we paid off over $100k in car loans and other debt, and never felt deprived or missing out on other activities. This year, we have been able to put over $200,000 into our retirement accounts, something that seemed impossible just a few years ago."
   },
   {
     "name": "Jimmy Vanaria",
     "date": "March 23, 2026",
-    "text": "My wife and I have been stuck in a paycheck-to-paycheck cycle for our entire marriage. Working with Rogue Finance completely changed that in just 90 days. They helped us build a clear, simple system that actually works for our real lives. We're not just \"getting by\" anymore. We feel in control."
+    "text": "My wife and I have been stuck in a paycheck-to-paycheck cycle for our entire marriage, and no matter how much we earned, it always felt like we were just trying to stay afloat. Working with Rogue Finance completely changed that in just 90 days. We’re not just “getting by” anymore. We feel in control."
+  },
+  {
+    "name": "Lea Murrell",
+    "date": "March 11, 2026",
+    "text": "Andy, Joanna, and the Rogue Financial process have changed my life so incredibly significantly in three short months! Following a divorce, some other financial setbacks, and largely just not being very financially savvy I was not in a good place despite making a decent single income. The program itself, the communication, and the encouragement that this has provided was exactly what I needed."
+  },
+  {
+    "name": "Jonjon Battles",
+    "date": "February 20, 2026",
+    "text": "Andy helped me put aside the fear and confusion I had about money and helped bring it into focus. Laid a plan based on what I've got coming in and going out and is there to support and answer questions, give ideas any time."
   },
   {
     "name": "Camille West",
     "date": "February 11, 2026",
-    "text": "The team at Rogue Finance helped me gain meaningful clarity and structure around my finances. What stood out was not just the mindset shift they encouraged, but the practical, sustainable system they introduced. Andy, Joanna, and the entire team were knowledgeable, supportive, and genuinely invested in my progress."
+    "text": "The team at Rogue Finance helped me gain meaningful clarity and structure around my finances. Andy, Joanna, and the entire team were knowledgeable, supportive, and genuinely invested in my progress. While I was responsible for doing the work, their guidance and accountability made all the difference."
+  },
+  {
+    "name": "Dave P",
+    "date": "February 11, 2026",
+    "text": "I was very skeptical going into this because there are a TON of online scams in the finance world. Trust me when I say Andy and team are the real deal. They don’t ask for your passwords or any personal information except for the amount of debt you have, your income, and your monthly spending. Andy is a real dude who you’ll talk to on zoom calls and is completely accessible as you go through the program."
+  },
+  {
+    "name": "Beatrice Urtecho",
+    "date": "February 6, 2026",
+    "text": "Andy is so easy to talk to and work with. He was able to help me understand finance in a way I hadn’t been taught before. He helped me save enough money so I could open my own business and be able to travel. Working with him has been life changing!"
+  },
+  {
+    "name": "Justin C.",
+    "date": "February 5, 2026",
+    "text": "A big part of my income is variable and paid quarterly, so traditional budgeting never really fit my life. Andy helped me build an automated, rules-based system that’s simple and honestly hard to mess up. The biggest win, though, is peace of mind. I feel in control instead of guessing."
+  },
+  {
+    "name": "Jeff",
+    "date": "February 3, 2026",
+    "text": "Andy and his team have been excellent to work with to change my view on my finances. They are upfront and honest. They have lots of experience with difficult financial situations so don’t be afraid to be vulnerable with them about your finances."
+  },
+  {
+    "name": "JZ",
+    "date": "February 2, 2026",
+    "text": "Andy brings clarity to a space that often feels confusing and intimidating. He explains financial decisions in plain language, focuses on real outcomes, and puts people first at every step. You never feel rushed. You never feel sold to. You feel informed and supported."
+  },
+  {
+    "name": "Sloane",
+    "date": "February 2, 2026",
+    "text": "As a young married couple looking to start out on the right foot, Andy and his team have made understanding and managing our money not only feel possible, but very exciting! I’m so grateful for the support they offer, and the insights of this system."
+  },
+  {
+    "name": "Thrnmanz",
+    "date": "January 30, 2026",
+    "text": "Working with Andy and Rogue Finance we really were able to see our finances as a whole. He opened our eyes to see where our spending habits were coming from and helped us create a comfortable budget."
+  },
+  {
+    "name": "Bridget Finn",
+    "date": "January 28, 2026",
+    "text": "I was never good with money. I had a lot of shame around it. Over the years my income increased steadily enough but I always found myself in the same paycheck to paycheck cycle. Andy’s “recipe” helped me to build a system where my money works for me. My bills are paid automatically. My savings are growing automatically."
   }
 ];
 
@@ -536,13 +724,16 @@ function Header() {
   );
 }
 
-function VideoCard({ viewer }) {
+function VideoCard({ viewer, startAt }) {
+  // startAt (seconds) comes from a chapter tap: the player reloads there and starts.
+  const src = startAt == null ? COMPLETION_VIDEO_URL : COMPLETION_VIDEO_URL + "&time=" + startAt + "&autoPlay=true";
   return (
     <div className="done-video-frame">
       {COMPLETION_VIDEO_URL ? (
         <iframe
+          key={startAt == null ? "start" : startAt}
           style={styles.iframe}
-          src={withViewer(COMPLETION_VIDEO_URL, viewer)}
+          src={withViewer(src, viewer)}
           title={COMPLETION_VIDEO_TITLE}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -559,30 +750,75 @@ function VideoCard({ viewer }) {
   );
 }
 
-function BreakoutVideos({ viewer }) {
+function fmtClock(sec) {
+  return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+}
+
+// Phone width matches the 640px breakpoint in index.css.
+function useIsPhone() {
+  const query = "(max-width: 640px)";
+  const [isPhone, setIsPhone] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const m = window.matchMedia(query);
+    const on = () => setIsPhone(m.matches);
+    m.addEventListener ? m.addEventListener("change", on) : m.addListener(on);
+    return () => (m.removeEventListener ? m.removeEventListener("change", on) : m.removeListener(on));
+  }, []);
+  return isPhone;
+}
+
+function breakoutSrc(id, viewer, autoPlay) {
+  return withViewer(
+    `https://fast.wistia.net/embed/iframe/${id}?videoFoam=true&playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true` +
+      (autoPlay ? "&autoPlay=true" : ""),
+    viewer
+  );
+}
+
+// Oct 20 revamp plan: 20 of 44 submitters played any breakout, but players finish them. Every
+// tile shows its run time; on phone the six are compact rows (still + question) and the player
+// loads when tapped, so all six questions fit about one screen.
+function BreakoutVideos({ viewer, openId, onOpen }) {
+  const isPhone = useIsPhone();
   return (
-    <div className="done-qs">
+    <div className="done-qs" id="breakouts">
       <h2 className="done-qs-title">{BREAKOUT_TITLE}</h2>
       <div className="done-qs-grid">
-        {BREAKOUT_VIDEOS.map((v) => (
-          <div className="done-q" key={v.id}>
-            <div className="done-video-frame done-q-frame">
-              <iframe
-                style={styles.iframe}
-                src={withViewer(
-                  `https://fast.wistia.net/embed/iframe/${v.id}?videoFoam=true&playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true`,
-                  viewer
-                )}
-                title={v.q}
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+        {BREAKOUT_VIDEOS.map((v) => {
+          const open = !isPhone || openId === v.id;
+          return (
+            <div
+              className={"done-q" + (v.id === PARTNER_VIDEO_ID ? " done-q-hot" : "") + (open ? "" : " done-q-row")}
+              key={v.id}
+              id={"breakout-" + v.id}
+            >
+              {open ? (
+                <div className="done-video-frame done-q-frame">
+                  <iframe
+                    style={styles.iframe}
+                    src={breakoutSrc(v.id, viewer, isPhone)}
+                    title={v.q}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <button type="button" className="done-q-thumb" onClick={() => onOpen(v.id)} aria-label={"Play: " + v.q}>
+                  <img src={WISTIA_STILL + v.still + ".jpg?image_crop_resized=320x180"} alt="" loading="lazy" />
+                  <span className="done-q-play" />
+                  <span className="done-q-len">{v.len}</span>
+                </button>
+              )}
+              <div className="done-q-text" onClick={open ? undefined : () => onOpen(v.id)}>
+                <div className="done-q-label">{v.q}</div>
+              </div>
             </div>
-            <div className="done-q-label">{v.q}</div>
-            <p className="done-q-teaser">{v.a}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -660,7 +896,7 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
         {snap ? (
           <div className="done-snap-grid">
             <div className="done-snap-cell">
-              <div className="done-snap-k">Common benchmark {snap.label}</div>
+              <div className="done-snap-k">Common benchmark {snap.label}*</div>
               <div className="done-snap-v">{shortMoney(snap.target)}</div>
               <div className="done-snap-m">{x(snap.targetMultiple)}</div>
             </div>
@@ -681,11 +917,157 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
           </div>
         ) : null}
         <p className="done-snap-note">
-          Uses the retirement balance and household income you entered. Home equity is not counted.
-          Benchmark: Fidelity&apos;s savings-by-age guideline (1x income by 30, 3x by 40, 6x by 50,
-          8x by 60, 10x by 67). A guideline, not advice for your situation. Your strategist can walk
-          through it with you on the call.
+          *Fidelity&apos;s savings-by-age guideline: 1x income by 30, 3x by 40, 6x by 50, 8x by 60,
+          10x by 67. Uses the retirement balance and household income you entered; home equity is not
+          counted. A guideline, not advice for your situation.
         </p>
+      </div>
+    </div>
+  );
+}
+
+// Debt clock (Patrick 2026-10-25, shipped 10/26). Uses the debt answers from the form with assumed
+// rates (cited below), not the prospect's own. Until the results lookup returns the debt fields
+// (plans/2026-10-25-rogue-prep-results-link-debts.md), it shows right after submit only, and stays
+// hidden on a reopened link.
+// Rates: Federal Reserve G.19 (released 2026-10-07, August data): 22.36% card accounts assessed interest,
+// 11.90% 24-month personal loans. 36%: Fannie Mae Selling Guide B3-6-02, max total DTI (manual underwriting).
+const DEBT_CLOCK_APR = { card: 0.22, loan: 0.12 };
+const DEBT_PAYMENT_GUIDELINE = 0.36;
+
+function debtFreeMonths(balance, monthlyRate, payment) {
+  if (balance <= 0) return 0;
+  if (!payment || payment <= balance * monthlyRate) return null; // never, at this payment
+  if (monthlyRate === 0) return Math.ceil(balance / payment);
+  return Math.ceil(-Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate));
+}
+
+function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income }) {
+  const card = cardDebt > 0 ? cardDebt : 0;
+  const loan = loanDebt > 0 ? loanDebt : 0;
+  const total = card + loan;
+  const yearlyInterest = card * DEBT_CLOCK_APR.card + loan * DEBT_CLOCK_APR.loan;
+  if (total <= 0) return null;
+
+  const perDay = yearlyInterest / 365;
+  const months = debtFreeMonths(total, yearlyInterest / total / 12, monthlyPayment);
+  let freeLabel = "Not at this payment";
+  if (months !== null) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    freeLabel = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  // Fannie Mae's 36% counts the housing payment too, so rent or mortgage goes in with the debt payments.
+  const ratioPayments = (monthlyPayment > 0 ? monthlyPayment : 0) + (housingPayment > 0 ? housingPayment : 0);
+  const share = income > 0 && ratioPayments > 0 ? (ratioPayments * 12) / income : null;
+  const money = (n) => "$" + Math.round(n).toLocaleString();
+  return (
+    <div className="done-debt">
+      <h2 className="done-qs-title">Your debt clock</h2>
+      <div className="done-snap-card">
+        <div className="done-debt-tick">
+          <div className="done-debt-tick-v">{money(yearlyInterest)} a year*</div>
+          <div className="done-debt-tick-k">in interest at these balances</div>
+        </div>
+        <div className="done-snap-grid">
+          <div className="done-snap-cell">
+            <div className="done-snap-k">Card and loan debt</div>
+            <div className="done-snap-v">{shortMoney(total)}</div>
+            <div className="done-snap-m">{money(perDay)} of interest a day</div>
+          </div>
+          <div className="done-snap-cell">
+            <div className="done-snap-k">Debt-free at your current payments</div>
+            <div className={"done-snap-v" + (months === null ? " done-snap-gap" : "")}>{freeLabel}</div>
+            <div className="done-snap-m">
+              {months === null ? "Payments don't cover the interest" : months + " months from now"}
+            </div>
+          </div>
+          <div className="done-snap-cell">
+            <div className="done-snap-k">Where you&apos;d want to be**</div>
+            <div className="done-snap-v">Under {Math.round(DEBT_PAYMENT_GUIDELINE * 100)}%</div>
+            <div className={"done-snap-m" + (share !== null && share > DEBT_PAYMENT_GUIDELINE ? " done-snap-gap" : "")}>
+              {share === null
+                ? "of income on debt and housing payments"
+                : "of income on debt and housing payments. Yours: " + Math.round(share * 100) + "%"}
+            </div>
+          </div>
+        </div>
+        <p className="done-snap-note">
+          *Assumes {Math.round(DEBT_CLOCK_APR.card * 100)}% a year on cards and {Math.round(DEBT_CLOCK_APR.loan * 100)}% on
+          personal loans, close to the latest US averages (Federal Reserve G.19, August 2026: 22.36% on card
+          accounts paying interest, 11.90% on 24-month personal loans), and that your monthly debt payments go to
+          these balances. Your real rates will differ.
+          <br />
+          **Fannie Mae&apos;s maximum total debt-to-income ratio for manually underwritten mortgages (Selling Guide
+          B3-6-02): monthly debt payments plus the housing payment, divided by gross monthly income. Your rent or
+          mortgage counts as the housing payment here.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// "Is someone else joining you on this call?" Shares the results link (no numbers in the link
+// itself; it opens them, so whoever gets it sees them). "Share" opens the device's own share
+// sheet (WhatsApp, iMessage and the rest live there) where the browser has one; Copy link always.
+function ShareResults({ link, closerName }) {
+  const [copied, setCopied] = useState(false);
+  const text =
+    "Here are my prep answers for our call" + (closerName ? " with " + closerName : "") +
+    " at Rogue Finance. Have a look before we talk: " + link;
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      window.prompt("Copy this link", link);
+    }
+  };
+  return (
+    <div className="done-share">
+      <h2 className="done-share-title">Is someone else joining you on this call?</h2>
+      <p className="done-share-body">
+        If you share money with a partner, they join the call too. Send them your results so they see the same
+        numbers before you talk.
+      </p>
+      <div className="done-share-btns">
+        {canShare ? (
+          <button
+            type="button"
+            className="done-share-btn done-share-main"
+            onClick={() => navigator.share({ title: "Rogue Finance prep", text, url: link }).catch(() => {})}
+          >
+            Share
+          </button>
+        ) : null}
+        <button type="button" className={"done-share-btn" + (canShare ? "" : " done-share-main")} onClick={copy}>
+          {copied ? "Link copied" : "Copy link"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WinsWall() {
+  return (
+    <div className="done-wins">
+      <h2 className="done-qs-title">{WINS_TITLE}</h2>
+      <p className="done-proof-sub">{WINS_SUB}</p>
+      <div className="done-wins-grid">
+        {WINS.map((w) => (
+          <div className="done-win" key={w.file}>
+            <img
+              src={`/prep-assets/wins/${w.file}`}
+              width={w.w}
+              height={w.h}
+              alt={w.alt}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -771,6 +1153,9 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
+  // Completion page: chapter the training starts from, breakout opened on phone.
+  const [trainingStart, setTrainingStart] = useState(null);
+  const [openBreakout, setOpenBreakout] = useState(null);
 
   useEffect(() => {
     if (!paramToken) return;
@@ -836,8 +1221,15 @@ export default function RoguePrepForm() {
       .then((r) => r.json())
       .then((j) => {
         if (!j || !j.ok) return;
-        if (j.annualHouseholdIncome != null) setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
+        if (j.annualHouseholdIncome != null) {
+          setAnnualHouseholdIncome(String(j.annualHouseholdIncome));
+        }
         if (j.retirement401k != null) setRetirement401k(String(j.retirement401k));
+        // Debt clock mockup: the live lookup does not return these, the local mock does.
+        if (j.creditCardDebt != null) setCreditCardDebt(String(j.creditCardDebt));
+        if (j.personalLoanDebt != null) setPersonalLoanDebt(String(j.personalLoanDebt));
+        if (j.monthlyDebtPayments != null) setMonthlyDebtPayments(String(j.monthlyDebtPayments));
+        if (j.monthlyRentMortgage != null) setMonthlyRentMortgage(String(j.monthlyRentMortgage));
         if (Number.isInteger(j.age)) setSavedAge(j.age);
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
         if (looksLikeEmail(j.email)) setEmail(j.email.trim());
@@ -1022,10 +1414,23 @@ export default function RoguePrepForm() {
   // ---------------- Completion ----------------
   if (step === 5) {
     const viewer = looksLikeEmail(email) ? email : loadViewer();
+    const jumpTo = (id) => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    const playChapter = (t) => {
+      setTrainingStart(t);
+      jumpTo("training");
+    };
+    const income = parseNumOrNull(annualHouseholdIncome);
+    const sharedId = paramResults || resultsId;
+    const shareLink =
+      typeof window !== "undefined" && sharedId
+        ? window.location.origin + window.location.pathname + "?view=complete&r=" + sharedId
+        : "";
     return (
       <div className="done-page">
         <div className="done-inner">
-          <Header />
           <div className="done-hero">
             <h1 className="done-title">
               Form done. <span className="done-title-accent">One more thing.</span>
@@ -1033,32 +1438,47 @@ export default function RoguePrepForm() {
             <p className="done-body">
               {closerName
                 ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
-                : "Your strategist will go through your answers before the call."}{" "}
-              Do the one thing below and the call starts from your numbers.
+                : "Your strategist will go through your answers before the call."}
             </p>
           </div>
-          <div className="done-card">
-            <div className="done-tag">Last step</div>
+
+          {/* Order (Patrick 2026-10-25): training, share box, their own numbers, then the breakouts. */}
+          <div className="done-card" id="training">
             <h2 className="done-card-title">{COMPLETION_VIDEO_TITLE}</h2>
             <p className="done-card-body">{COMPLETION_VIDEO_BODY}</p>
-            <ul className="done-covers">
-              {COMPLETION_VIDEO_COVERS.map((t) => (
-                <li key={t}>
-                  <span className="done-covers-check">&#10003;</span>
-                  {t}
+            <VideoCard viewer={viewer} startAt={trainingStart} />
+            <ol className="done-chapters">
+              {TRAINING_CHAPTERS.map((c) => (
+                <li key={c.t}>
+                  <button type="button" onClick={() => playChapter(c.t)}>
+                    <span className="done-chapter-t">{fmtClock(c.t)}</span>
+                    {c.label}
+                  </button>
                 </li>
               ))}
-            </ul>
-            <VideoCard viewer={viewer} />
+            </ol>
           </div>
 
-          <BreakoutVideos viewer={viewer} />
+          {shareLink && income > 0 ? <ShareResults link={shareLink} closerName={closerName} /> : null}
 
-          <RetirementSnapshot
-            income={parseNumOrNull(annualHouseholdIncome)}
-            retirement={parseNumOrNull(retirement401k)}
-            knownAge={prefill.age || savedAge}
-          />
+          {income > 0 ? (
+            <div className="done-results">
+              <RetirementSnapshot
+                income={income}
+                retirement={parseNumOrNull(retirement401k)}
+                knownAge={prefill.age || savedAge}
+              />
+              <DebtClock
+                cardDebt={parseNumOrNull(creditCardDebt)}
+                loanDebt={parseNumOrNull(personalLoanDebt)}
+                monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
+                housingPayment={parseNumOrNull(monthlyRentMortgage)}
+                income={income}
+              />
+            </div>
+          ) : null}
+
+          <BreakoutVideos viewer={viewer} openId={openBreakout} onOpen={setOpenBreakout} />
 
           <div className="done-stats">
             <div className="done-stat">
@@ -1082,7 +1502,7 @@ export default function RoguePrepForm() {
             </h2>
             <p className="done-proof-sub">Here&apos;s what people say after sitting where you&apos;re sitting now.</p>
             <div className="done-reviews">
-              {REVIEWS.map((r) => (
+              {REVIEWS.slice(0, 9).map((r) => (
                 <div className="done-review" key={r.name}>
                   <div className="done-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                   <div className="done-review-name">{r.name}</div>
@@ -1091,7 +1511,32 @@ export default function RoguePrepForm() {
                 </div>
               ))}
             </div>
+            <a
+              className="done-share-btn done-reviews-more"
+              href="https://www.trustpilot.com/review/roguefinance.us"
+              target="_blank"
+              rel="noreferrer"
+            >
+              See all reviews on Trustpilot
+            </a>
           </div>
+
+          <WinsWall />
+
+          {/* Legal footer, approved by Patrick 2026-10-25. Wording matches Rogue's earnings disclaimer (AWH Consulting LLC). */}
+          <footer className="done-legal">
+            <p>
+              Rogue Finance (AWH Consulting LLC) offers financial education and coaching. Nothing on this page is
+              financial, tax, legal or investment advice for your situation. The retirement and debt figures are rough
+              estimates from the numbers you entered, using the guidelines and averages cited above. Reviews and client
+              messages show what those clients did and said. Your results will differ, and no outcome is guaranteed.
+            </p>
+            <p className="done-legal-links">
+              <a href="https://roguefinance.us/terms-of-use-9582" target="_blank" rel="noreferrer">Terms of Use</a>
+              <a href="https://roguefinance.us/online-privacy-policy-4749" target="_blank" rel="noreferrer">Privacy Policy</a>
+              <a href="https://roguefinance.us/earnings-disclaimer-5151" target="_blank" rel="noreferrer">Earnings Disclaimer</a>
+            </p>
+          </footer>
         </div>
       </div>
     );

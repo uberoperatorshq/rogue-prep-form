@@ -54,19 +54,6 @@ input[type="number"] {
   padding: 32px 28px 26px;
   text-align: center;
 }
-.done-tag {
-  display: inline-block;
-  font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #ffffff;
-  background: #b33626;
-  border-radius: 4px;
-  padding: 4px 12px;
-  margin-bottom: 16px;
-}
 .done-card-title {
   font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif;
   font-size: clamp(26px, 3.2vw, 34px);
@@ -77,14 +64,6 @@ input[type="number"] {
   margin: 0 0 12px;
 }
 .done-card-body { font-size: 16px; line-height: 1.6; color: #888888; max-width: 720px; margin: 0 auto 22px; }
-.done-covers {
-  list-style: none; margin: 0 auto 24px; padding: 0; max-width: 560px; text-align: left;
-}
-.done-covers li {
-  display: flex; align-items: flex-start; gap: 12px;
-  font-size: 15px; line-height: 1.5; color: #e8e8e8; padding: 5px 0;
-}
-.done-covers-check { color: #00b67a; font-weight: 700; flex: 0 0 auto; margin-top: 1px; }
 .done-video-frame {
   position: relative;
   width: 100%;
@@ -109,7 +88,8 @@ input[type="number"] {
 .done-stat { text-align: center; }
 .done-stat-divider { width: 1px; height: 44px; background: #222222; }
 .done-stat-num { font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif; font-size: 40px; font-weight: 900; color: #e8392a; line-height: 1; }
-.done-stat-label { font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #888888; margin-top: 6px; }
+/* Sentence case (2026-10-25): Rogue pages carry no tiny letter-spaced uppercase labels. */
+.done-stat-label { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; font-weight: 600; color: #888888; margin-top: 6px; }
 .done-stat-tp { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; }
 .done-tp-name { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 18px; font-weight: 700; color: #ffffff; }
 .done-tp-stars { color: #00b67a; font-size: 18px; letter-spacing: 1px; }
@@ -137,6 +117,71 @@ input[type="number"] {
 .done-snap-m { font-size: 13px; color: #888888; }
 .done-snap-note { font-size: 12px; line-height: 1.5; color: #777777; margin: 16px 0 0; }
 @media (max-width: 640px) { .done-snap-grid { grid-template-columns: 1fr; } .done-snap-v { font-size: 24px; } }
+/* Completion screen revamp (Oct 20 plan, built 2026-10-25) */
+.done-chapters { list-style: none; padding: 0; margin: 16px auto 0; max-width: 640px; text-align: left; display: grid; gap: 2px; }
+.done-chapters button {
+  display: grid; grid-template-columns: 54px 1fr; gap: 8px; width: 100%; text-align: left; cursor: pointer;
+  padding: 9px 10px; border: 0; border-radius: 6px; background: #161616; color: #e8e8e8; font: inherit; font-size: 14.5px; line-height: 1.4;
+}
+.done-chapters button:hover { background: #1d1d1d; }
+.done-chapter-t { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 600; color: #e8392a; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.done-q-hot { border-color: #e8392a; }
+.done-q-len {
+  position: absolute; right: 6px; bottom: 6px; z-index: 2; pointer-events: none;
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 600;
+  background: rgba(0, 0, 0, 0.8); color: #ffffff; padding: 1px 5px; border-radius: 3px;
+}
+.done-q-thumb {
+  position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; cursor: pointer;
+  border: 1px solid #2a2a2a; border-radius: 7px; overflow: hidden; background: #120a09;
+}
+.done-q-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.done-q-play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px;
+  border-radius: 50%; border: 2px solid #e8392a; background: rgba(0, 0, 0, 0.45);
+}
+.done-q-play::after {
+  content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-35%, -50%);
+  border-left: 9px solid #e8392a; border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+}
+.done-q-row { display: grid; grid-template-columns: 128px 1fr; gap: 12px; align-items: start; padding: 10px; }
+.done-q-row .done-q-text { cursor: pointer; }
+.done-q-row .done-q-label { margin-top: 0; font-size: 15px; }
+.done-q-row .done-q-teaser { font-size: 13.5px; }
+.done-hero + .done-snap { padding-top: 0; }
+/* Debt clock (MOCKUP 2026-10-25) */
+.done-debt { text-align: center; padding-top: 40px; }
+.done-debt .done-qs-title { margin-bottom: 8px; }
+.done-debt-tick { text-align: center; padding: 4px 0 6px; }
+.done-debt-tick-v { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 40px; font-weight: 800; color: #e8392a; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.done-debt-tick-k { font-size: 14px; color: #999999; margin-top: 4px; }
+.done-debt-live { display: inline-block; margin-top: 10px; font-size: 14px; color: #e8392a; font-variant-numeric: tabular-nums; border: 1px solid #3a1a16; border-radius: 6px; padding: 4px 10px; }
+/* Share with the person joining the call */
+.done-share { max-width: 720px; margin: 28px auto 0; background: #111111; border: 1px solid #222222; border-radius: 12px; padding: 20px 18px; text-align: center; }
+.done-share-title { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 20px; font-weight: 700; color: #ffffff; margin: 0 0 6px; }
+.done-share-body { font-size: 15px; color: #999999; margin: 0 0 16px; }
+.done-share-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.done-share-btn {
+  display: inline-block; cursor: pointer; text-decoration: none; font: inherit; font-size: 15px; font-weight: 600;
+  color: #ffffff; background: #1b1b1b; border: 1px solid #333333; border-radius: 8px; padding: 10px 16px;
+}
+.done-share-btn:hover { border-color: #555555; }
+.done-share-main { background: #e8392a; border-color: #e8392a; }
+.done-results { text-align: center; padding-top: 48px; }
+.done-results-title { font-family: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif; font-size: clamp(30px, 4vw, 44px); font-weight: 900; text-transform: uppercase; line-height: 1.05; color: #ffffff; margin: 0 0 8px; }
+.done-results .done-snap { padding-top: 24px; }
+.done-reviews-more { margin-top: 18px; }
+.done-legal { max-width: 760px; margin: 48px auto 0; padding-top: 22px; border-top: 1px solid #222222; text-align: center; }
+.done-legal p { font-size: 12px; line-height: 1.6; color: #666666; margin: 0 0 10px; }
+.done-legal-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; }
+.done-legal-links a { color: #888888; text-decoration: underline; }
+.done-wins { text-align: center; padding-top: 40px; }
+.done-wins .done-qs-title { margin-bottom: 8px; }
+.done-wins-grid { column-count: 3; column-gap: 14px; text-align: left; }
+.done-win { break-inside: avoid; margin: 0 0 14px; background: #111111; border: 1px solid #222222; border-radius: 12px; overflow: hidden; }
+.done-win img { display: block; width: 100%; height: auto; }
+@media (max-width: 900px) { .done-wins-grid { column-count: 2; } }
+@media (max-width: 640px) { .done-wins-grid { column-count: 1; } }
 @media (max-width: 900px) { .done-reviews { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 900px) { .done-qs-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) {
