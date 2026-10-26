@@ -1523,7 +1523,7 @@ export default function RoguePrepForm() {
 
           <WinsWall />
 
-          {/* DRAFT legal footer (2026-10-25): wording matches Rogue's earnings disclaimer; needs Patrick's sign-off. */}
+          {/* Legal footer, approved by Patrick 2026-10-25. Wording matches Rogue's earnings disclaimer (AWH Consulting LLC). */}
           <footer className="done-legal">
             <p>
               Rogue Finance (AWH Consulting LLC) offers financial education and coaching. Nothing on this page is
