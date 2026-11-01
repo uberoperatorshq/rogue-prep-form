@@ -27,6 +27,12 @@ http
       let body = {};
       try { body = JSON.parse(raw || "{}"); } catch { return send(res, 400, { ok: false }); }
       if (req.url === "/prep-form") {
+        // PREP_FORM_STATUS=503 node tools/mock-n8n.mjs → every submit fails, like n8n down.
+        const fail = Number(process.env.PREP_FORM_STATUS || 0);
+        if (fail) {
+          console.log("prep-form", body.resultsId, "-> forced", fail);
+          return send(res, fail, { message: "Error in workflow" });
+        }
         if (body.resultsId) saved.set(body.resultsId, body);
         console.log("prep-form", body.resultsId, JSON.stringify(body).length, "bytes", "token:", body.token ? "yes" : "no");
         return send(res, 200, { message: "Workflow got started." });
