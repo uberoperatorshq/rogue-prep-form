@@ -1380,13 +1380,17 @@ export default function RoguePrepForm() {
     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     try {
-      await fetch(WEBHOOK_URL, {
+      const res = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      // Webhook accepted the POST (any non-throwing response). Advance.
+      // fetch does not throw on HTTP errors. When n8n is down it can still answer
+      // (5xx, or 404 "webhook not registered") and nothing gets saved, so only a
+      // 2xx counts as received (Oct 31 outage lost a submission this way).
+      if (!res.ok) throw new Error("webhook HTTP " + res.status);
+      // Webhook accepted the POST. Advance.
       saveViewer(email);
       // Swap the booking link (name, email, token) for the results link, so a refresh or a
       // bookmark reopens this page with the snapshot.
@@ -1395,7 +1399,7 @@ export default function RoguePrepForm() {
       } catch (e) {}
       setStep(5);
     } catch (err) {
-      // AbortError = our timeout fired. Other errors = network / DNS / CORS.
+      // AbortError = our timeout fired. Other errors = network / DNS / CORS / non-2xx.
       // Keep the user's data so they can re-submit; show a clear, inline
       // message instead of a browser alert.
       if (err && err.name === "AbortError") {
