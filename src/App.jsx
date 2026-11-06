@@ -1280,6 +1280,8 @@ export default function RoguePrepForm() {
     } else if (step === 2) {
       if (isBlankString(creditScore)) blanks.creditScore = true;
       if (isBlankString(creditCardDebt)) blanks.creditCardDebt = true;
+      if (isBlankString(personalLoanDebt)) blanks.personalLoanDebt = true;
+      if (isBlankString(totalCreditLimit)) blanks.totalCreditLimit = true;
     } else if (step === 3) {
       if (isBlankString(retirement401k)) blanks.retirement401k = true;
       if (isBlankString(homeEquity)) blanks.homeEquity = true;
@@ -1307,7 +1309,7 @@ export default function RoguePrepForm() {
     const STEP_KEYS_FOR_CLEAR = {
       0: ["fullName", "email"],
       1: ["annualHouseholdIncome"],
-      2: ["creditScore", "creditCardDebt"],
+      2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit"],
       3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses", "state"],
       4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
     };
@@ -1741,10 +1743,10 @@ export default function RoguePrepForm() {
 
             <div style={styles.fieldBlock}>
               <label style={styles.label}>
-                Personal loan debt ($)<span style={styles.optionalTag}>(optional)</span>
+                Personal loan debt ($)
               </label>
               <div style={styles.helper}>
-                Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage.
+                Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage. No personal loans? Put 0.
               </div>
               <input
                 style={styles.input}
@@ -1756,12 +1758,17 @@ export default function RoguePrepForm() {
                 onChange={(e) => setPersonalLoanDebt(e.target.value)}
               />
               <PrefillHint field="personalLoanDebt" />
+              {errors.personalLoanDebt ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
+                </div>
+              ) : null}
             </div>
 
             <div style={styles.fieldBlock}>
               <label style={styles.label}>Total credit limit across all cards ($)</label>
               <div style={styles.helper}>
-                The combined limit on all your cards. Not what you owe, the total you could borrow.
+                The combined limit on all your cards. Not what you owe, the total you could borrow. No cards? Put 0.
               </div>
               <input
                 style={styles.input}
@@ -1772,6 +1779,11 @@ export default function RoguePrepForm() {
                 value={totalCreditLimit}
                 onChange={(e) => setTotalCreditLimit(e.target.value)}
               />
+              {errors.totalCreditLimit ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
+                </div>
+              ) : null}
               {(() => {
                 const ccd = parseNumOrNull(creditCardDebt);
                 const tcl = parseNumOrNull(totalCreditLimit);
