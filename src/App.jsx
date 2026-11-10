@@ -1140,6 +1140,38 @@ export default function RoguePrepForm() {
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
 
+  // Drop a field's "don't leave this blank" line as soon as it has an answer.
+  // Before this, the red text stayed up after the prospect typed 0 until the
+  // next Next tap, so a valid answer looked rejected.
+  useEffect(() => {
+    const values = {
+      fullName, email, annualHouseholdIncome,
+      creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
+      retirement401k, homeEquity, otherAssetsValue, savings,
+      monthlyRentMortgage, monthlyDebtPayments, totalMonthlyExpenses, state: stateValue,
+      bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
+    };
+    setErrors((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const k of Object.keys(prev)) {
+        if (!(k in values)) continue;
+        const ok = k === "email" ? looksLikeEmail(values[k]) : !isBlankString(values[k]);
+        if (ok) {
+          delete next[k];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [
+    fullName, email, annualHouseholdIncome,
+    creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
+    retirement401k, homeEquity, otherAssetsValue, savings,
+    monthlyRentMortgage, monthlyDebtPayments, totalMonthlyExpenses, stateValue,
+    bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
+  ]);
+
   // ---------------- Pre-fill from the setter call ----------------
   // Only fills fields the prospect has not typed in. The snapshot rides along
   // on submit so n8n can show the closer what changed.
@@ -1726,7 +1758,6 @@ export default function RoguePrepForm() {
               </div>
               <input
                 style={styles.input}
-                placeholder="0"
                 type="number"
                 onWheel={(e) => e.currentTarget.blur()}
                 inputMode="decimal"
@@ -1750,7 +1781,6 @@ export default function RoguePrepForm() {
               </div>
               <input
                 style={styles.input}
-                placeholder="0"
                 type="number"
                 onWheel={(e) => e.currentTarget.blur()}
                 inputMode="decimal"
@@ -1847,7 +1877,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
@@ -1869,7 +1898,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
@@ -1891,7 +1919,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
@@ -1927,7 +1954,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
@@ -1949,7 +1975,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
@@ -1970,7 +1995,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
@@ -1991,7 +2015,6 @@ export default function RoguePrepForm() {
                 </div>
                 <input
                   style={styles.input}
-                  placeholder="0"
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
