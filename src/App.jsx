@@ -100,6 +100,9 @@ const WINS = [
 // Trustpilot for the rest (Patrick 2026-10-25). Excerpts in the reviewer's
 // own words, cut only, never reworded. Held back for a compliance call: Kara Turrentine, Lissetth Jarquin,
 // Jennifer Crabtree (credit-score claims), Daniel Geyer (investment returns).
+// Picked 2026-11-15 (Patrick), one per pre-call fear: heavy debt, a couple, a skeptic. Shown first;
+// the next 6 newest sit behind "Show 6 more reviews".
+const PICKED_REVIEWS = ["Michael Kemper", "Jimmy Vanaria", "Dave P"];
 const REVIEWS = [
   {
     "name": "Gary",
@@ -1304,6 +1307,8 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
+  // Reviews: 3 picked up top, the rest behind "Show 6 more reviews".
+  const [moreReviews, setMoreReviews] = useState(false);
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
@@ -1779,7 +1784,10 @@ export default function RoguePrepForm() {
             </h2>
             <p className="done-proof-sub">Here&apos;s what people say after sitting where you&apos;re sitting now.</p>
             <div className="done-reviews">
-              {REVIEWS.slice(0, 9).map((r) => (
+              {[
+                ...PICKED_REVIEWS.map((n) => REVIEWS.find((r) => r.name === n)).filter(Boolean),
+                ...(moreReviews ? REVIEWS.filter((r) => !PICKED_REVIEWS.includes(r.name)).slice(0, 6) : []),
+              ].map((r) => (
                 <div className="done-review" key={r.name}>
                   <div className="done-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                   <div className="done-review-name">{r.name}</div>
@@ -1788,6 +1796,11 @@ export default function RoguePrepForm() {
                 </div>
               ))}
             </div>
+            {!moreReviews ? (
+              <button type="button" className="done-share-btn done-reviews-show" onClick={() => setMoreReviews(true)}>
+                Show 6 more reviews
+              </button>
+            ) : null}
             <a
               className="done-share-btn done-reviews-more"
               href="https://www.trustpilot.com/review/roguefinance.us"

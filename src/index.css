@@ -213,3 +213,4 @@ input[type="number"] {
 .done-before-btn { display: block; width: 100%; min-height: 48px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333333; background: transparent; color: #ffffff; font-size: 16px; cursor: pointer; }
 .done-before-main { background: #c0392b; border-color: #c0392b; font-weight: 600; }
 .done-before-tip { font-size: 14px; color: #cfcfcf; text-align: center; margin: 6px 0 0; }
+.done-reviews-show { display: block; margin: 18px auto 10px; }
