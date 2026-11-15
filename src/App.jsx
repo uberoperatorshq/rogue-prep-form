@@ -1124,6 +1124,11 @@ export default function RoguePrepForm() {
   const [creditScore, setCreditScore] = useState("");
   const [creditCardDebt, setCreditCardDebt] = useState("");
   const [personalLoanDebt, setPersonalLoanDebt] = useState("");
+  // Debt 12 months ago (2026-11-15). Cards + personal loans, one number, so the
+  // prospect sees the trend before the call and the closer can cost out inaction.
+  const [debtLastYear, setDebtLastYear] = useState("");
+  // The debt check is its own page after step 4, asked once everything else is in.
+  const [debtCheck, setDebtCheck] = useState(false);
   const [totalCreditLimit, setTotalCreditLimit] = useState("");
   const [debtNotes, setDebtNotes] = useState("");
 
@@ -1157,7 +1162,7 @@ export default function RoguePrepForm() {
   useEffect(() => {
     const values = {
       fullName, email, annualHouseholdIncome,
-      creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
+      creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit,
       retirement401k, homeEquity, otherAssetsValue, savings,
       monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, state: stateValue,
       bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
@@ -1177,7 +1182,7 @@ export default function RoguePrepForm() {
     });
   }, [
     fullName, email, annualHouseholdIncome,
-    creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
+    creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit,
     retirement401k, homeEquity, otherAssetsValue, savings,
     monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, stateValue,
     bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
@@ -1333,7 +1338,7 @@ export default function RoguePrepForm() {
       return;
     }
     window.scrollTo(0, 0);
-  }, [step]);
+  }, [step, debtCheck]);
 
   function PrefillHint({ field }) {
     if (prefill.status !== "filled" || !(field in prefill.values)) return null;
@@ -1353,6 +1358,14 @@ export default function RoguePrepForm() {
     // hook-state variables directly from this render's closure. 0 is a
     // valid answer everywhere; only truly empty input blocks.
     const blanks = {};
+    if (debtCheck) {
+      if (isBlankString(debtLastYear)) {
+        setErrors((prev) => ({ ...prev, debtLastYear: true }));
+        return;
+      }
+      handleSubmit();
+      return;
+    }
     if (step === 0) {
       if (isBlankString(fullName)) blanks.fullName = true;
       if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
@@ -1400,10 +1413,14 @@ export default function RoguePrepForm() {
       return next;
     });
     if (step < 4) setStep(step + 1);
-    else if (step === 4) handleSubmit();
+    else if (step === 4) setDebtCheck(true);
   }
 
   function goBack() {
+    if (debtCheck) {
+      setDebtCheck(false);
+      return;
+    }
     if (step > 0) setStep(step - 1);
   }
 
@@ -1426,6 +1443,7 @@ export default function RoguePrepForm() {
       creditScore: parseNumOrNull(creditScore),
       creditCardDebt: parseNumOrNull(creditCardDebt),
       personalLoanDebt: parseNumOrNull(personalLoanDebt),
+      debtLastYear: parseNumOrNull(debtLastYear),
       totalCreditLimit: parseNumOrNull(totalCreditLimit),
       debtNotes: debtNotes.trim(),
       retirement401k: parseNumOrNull(retirement401k),
@@ -1767,9 +1785,49 @@ export default function RoguePrepForm() {
           ))}
         </div>
 
-        <div style={styles.stepLabel}>{STEPS[stepIdx].label}</div>
-        <div style={styles.stepTitle}>{STEPS[stepIdx].title}</div>
-        <div style={styles.stepDesc}>{STEPS[stepIdx].desc}</div>
+        <div style={styles.stepLabel}>{debtCheck ? "Last one" : STEPS[stepIdx].label}</div>
+        <div style={styles.stepTitle}>{debtCheck ? "One quick look back" : STEPS[stepIdx].title}</div>
+        <div style={styles.stepDesc}>{debtCheck ? "This helps your strategist see where things are heading." : STEPS[stepIdx].desc}</div>
+
+        {debtCheck && (() => {
+          const today = (parseNumOrNull(creditCardDebt) || 0) + (parseNumOrNull(personalLoanDebt) || 0);
+          const ly = parseNumOrNull(debtLastYear);
+          let change = null;
+          if (ly !== null) {
+            const diff = today - ly;
+            if (Math.abs(diff) < 100) change = <>That&apos;s about the same as a year ago.</>;
+            else if (diff > 0) change = <>That&apos;s about {fmtMoney(diff)} more than a year ago.</>;
+            else change = <>That&apos;s about {fmtMoney(-diff)} less than a year ago.</>;
+          }
+          return (
+            <div style={styles.card}>
+              <div style={styles.cardLabel}>Your debt, then and now</div>
+              <div style={styles.fieldBlockLast}>
+                <div style={styles.calcReadout}>
+                  Right now you owe roughly {fmtMoney(today)} across credit cards and personal loans.
+                </div>
+                <label style={styles.label}>Where would you say that was 12 months ago? ($)</label>
+                <div style={styles.helper}>
+                  Credit cards plus personal loans, roughly this time last year. A best guess is fine. Had none? Put 0.
+                </div>
+                <input
+                  style={styles.input}
+                  type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
+                  inputMode="decimal"
+                  value={debtLastYear}
+                  onChange={(e) => setDebtLastYear(e.target.value)}
+                />
+                {errors.debtLastYear ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
+                {change ? <div style={styles.calcReadout}>{change}</div> : null}
+              </div>
+            </div>
+          );
+        })()}
 
         {step === 1 && (
           <div style={styles.card}>
@@ -2110,7 +2168,7 @@ export default function RoguePrepForm() {
           </>
         )}
 
-        {step === 4 && (
+        {step === 4 && !debtCheck && (
           <>
             <div style={styles.card}>
               <div style={styles.cardLabel}>You &amp; money</div>
@@ -2210,7 +2268,7 @@ export default function RoguePrepForm() {
             onClick={goNext}
             disabled={submitting}
           >
-            {step < 4 ? "Continue" : submitting ? "Submitting…" : "Submit"}
+            {!debtCheck ? "Continue" : submitting ? "Submitting…" : "Submit"}
           </button>
         </div>
 
