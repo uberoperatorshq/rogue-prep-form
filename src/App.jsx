@@ -1846,29 +1846,6 @@ export default function RoguePrepForm() {
             </div>
 
             <div style={styles.fieldBlock}>
-              <label style={styles.label}>
-                Personal loan debt ($)
-              </label>
-              <div style={styles.helper}>
-                Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage. No personal loans? Put 0.
-              </div>
-              <input
-                style={styles.input}
-                type="number"
-                onWheel={(e) => e.currentTarget.blur()}
-                inputMode="decimal"
-                value={personalLoanDebt}
-                onChange={(e) => setPersonalLoanDebt(e.target.value)}
-              />
-              <PrefillHint field="personalLoanDebt" />
-              {errors.personalLoanDebt ? (
-                <div style={styles.errText}>
-                  Best guess is fine, but please don&apos;t leave this blank.
-                </div>
-              ) : null}
-            </div>
-
-            <div style={styles.fieldBlock}>
               <label style={styles.label}>Total credit limit across all cards ($)</label>
               <div style={styles.helper}>
                 The combined limit on all your cards. Not what you owe, the total you could borrow. No cards? Put 0.
@@ -1918,6 +1895,29 @@ export default function RoguePrepForm() {
                   </>
                 );
               })()}
+            </div>
+
+            <div style={styles.fieldBlock}>
+              <label style={styles.label}>
+                Personal loan debt ($)
+              </label>
+              <div style={styles.helper}>
+                Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage. No personal loans? Put 0.
+              </div>
+              <input
+                style={styles.input}
+                type="number"
+                onWheel={(e) => e.currentTarget.blur()}
+                inputMode="decimal"
+                value={personalLoanDebt}
+                onChange={(e) => setPersonalLoanDebt(e.target.value)}
+              />
+              <PrefillHint field="personalLoanDebt" />
+              {errors.personalLoanDebt ? (
+                <div style={styles.errText}>
+                  Best guess is fine, but please don&apos;t leave this blank.
+                </div>
+              ) : null}
             </div>
 
             <div style={styles.fieldBlockLast}>
