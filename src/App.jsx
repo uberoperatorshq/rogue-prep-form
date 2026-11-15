@@ -1135,7 +1135,13 @@ export default function RoguePrepForm() {
   const [savings, setSavings] = useState("");
   const [monthlyRentMortgage, setMonthlyRentMortgage] = useState("");
   const [monthlyDebtPayments, setMonthlyDebtPayments] = useState("");
-  const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState("");
+  // "Everything else" (2026-11-15): 172 of 482 past answers put rent + debt payments above the
+  // typed total, so the total is now worked out from the three boxes and never typed.
+  const [otherMonthlyExpenses, setOtherMonthlyExpenses] = useState("");
+  const totalMonthlyExpenses = (() => {
+    const parts = [monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses].map(parseNumOrNull);
+    return parts.some((v) => v === null) ? null : parts.reduce((a, b) => a + b, 0);
+  })();
 
   // ---------------- Step 4: You & money ----------------
   const [bankCheckFrequency, setBankCheckFrequency] = useState("");
@@ -1153,7 +1159,7 @@ export default function RoguePrepForm() {
       fullName, email, annualHouseholdIncome,
       creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
       retirement401k, homeEquity, otherAssetsValue, savings,
-      monthlyRentMortgage, monthlyDebtPayments, totalMonthlyExpenses, state: stateValue,
+      monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, state: stateValue,
       bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
     };
     setErrors((prev) => {
@@ -1173,7 +1179,7 @@ export default function RoguePrepForm() {
     fullName, email, annualHouseholdIncome,
     creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
     retirement401k, homeEquity, otherAssetsValue, savings,
-    monthlyRentMortgage, monthlyDebtPayments, totalMonthlyExpenses, stateValue,
+    monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, stateValue,
     bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
   ]);
 
@@ -1364,7 +1370,7 @@ export default function RoguePrepForm() {
       if (isBlankString(savings)) blanks.savings = true;
       if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
       if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
-      if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
+      if (isBlankString(otherMonthlyExpenses)) blanks.otherMonthlyExpenses = true;
       if (isBlankString(stateValue)) blanks.state = true;
       // otherAssetsNote stays OPTIONAL
     } else if (step === 4) {
@@ -1385,7 +1391,7 @@ export default function RoguePrepForm() {
       0: ["fullName", "email"],
       1: ["annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit"],
-      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses", "state"],
+      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "otherMonthlyExpenses", "state"],
       4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
     };
     setErrors((prev) => {
@@ -1429,7 +1435,9 @@ export default function RoguePrepForm() {
       savings: parseNumOrNull(savings),
       monthlyRentMortgage: parseNumOrNull(monthlyRentMortgage),
       monthlyDebtPayments: parseNumOrNull(monthlyDebtPayments),
-      totalMonthlyExpenses: parseNumOrNull(totalMonthlyExpenses),
+      // Sum of the three boxes, so the GHL note, Slack post and results page read it as before.
+      totalMonthlyExpenses,
+      otherMonthlyExpenses: parseNumOrNull(otherMonthlyExpenses),
       state: stateValue ? stateValue : null,
       bankCheckFrequency: bankCheckFrequency || null,
       financialLiteracy: parseNumOrNull(financialLiteracy),
@@ -2054,21 +2062,26 @@ export default function RoguePrepForm() {
               </div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>Total monthly expenses ($)</label>
+                <label style={styles.label}>Everything else, per month ($)</label>
                 <div style={styles.helper}>
-                  Everything you spend in a month: bills, groceries, subscriptions, all of it. Rough number is fine.
+                  Not rent or debt payments. Groceries, gas, utilities, insurance, phone, subscriptions, childcare, eating out. Rough number is fine.
                 </div>
                 <input
                   style={styles.input}
                   type="number"
                   onWheel={(e) => e.currentTarget.blur()}
                   inputMode="decimal"
-                  value={totalMonthlyExpenses}
-                  onChange={(e) => setTotalMonthlyExpenses(e.target.value)}
+                  value={otherMonthlyExpenses}
+                  onChange={(e) => setOtherMonthlyExpenses(e.target.value)}
                 />
-                {errors.totalMonthlyExpenses ? (
+                {errors.otherMonthlyExpenses ? (
                   <div style={styles.errText}>
                     Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
+                {totalMonthlyExpenses !== null ? (
+                  <div style={styles.calcReadout}>
+                    That&apos;s about {fmtMoney(totalMonthlyExpenses)} a month all in: housing, debt payments and everything else.
                   </div>
                 ) : null}
               </div>
