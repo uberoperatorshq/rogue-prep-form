@@ -331,7 +331,7 @@ const styles = {
   privacy: {
     textAlign: "center",
     fontSize: 11,
-    color: "#555",
+    color: "#888",
     marginBottom: 24,
     lineHeight: 1.5,
     padding: "0 12px",
@@ -379,7 +379,7 @@ const styles = {
     fontWeight: 500,
     lineHeight: 1.35,
   },
-  optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
+  optionalTag: { color: "#888", fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
   blankNote: { fontSize: 13, color: ERR, textAlign: "center", marginBottom: 10, lineHeight: 1.45 },
   prefillHint: { fontSize: 12, color: "#777", marginTop: 6, lineHeight: 1.45 },
@@ -408,19 +408,19 @@ const styles = {
   },
   calcConfirm: {
     fontSize: 12,
-    color: "#777",
+    color: "#9a9a9a",
     marginTop: 8,
     lineHeight: 1.45,
     fontStyle: "italic",
   },
-  helper: { fontSize: 12, color: "#777", marginBottom: 8, lineHeight: 1.45 },
+  helper: { fontSize: 13, color: "#9a9a9a", marginBottom: 8, lineHeight: 1.45 },
   nudge: { fontSize: 12, color: NUDGE, marginTop: 6, lineHeight: 1.45 },
   input: {
     width: "100%",
     background: INPUT_BG,
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
-    padding: "11px 12px",
+    padding: "12px 12px",
     color: TEXT,
     fontSize: 16,
     outline: "none",
@@ -431,7 +431,7 @@ const styles = {
     background: INPUT_BG,
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
-    padding: "11px 12px",
+    padding: "12px 12px",
     color: TEXT,
     fontSize: 16,
     outline: "none",
@@ -445,7 +445,7 @@ const styles = {
     background: INPUT_BG,
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
-    padding: "11px 12px",
+    padding: "12px 12px",
     color: TEXT,
     fontSize: 16,
     outline: "none",
@@ -1699,7 +1699,7 @@ export default function RoguePrepForm() {
               Five minutes here means your strategist walks in already knowing your situation. The whole call goes to building your plan.
             </p>
             <p style={styles.introLine}>
-              It&apos;s confidential. Only your strategist sees it. We don&apos;t ask for account numbers, SSN, or your licence. We don&apos;t need any of that.
+              It&apos;s confidential. Only your strategist sees it. We don&apos;t ask for account numbers, SSN, or your license. We don&apos;t need any of that.
             </p>
             <p style={styles.introLine}>
               Try to fill everything in, even if it&apos;s just a rough guess. If you genuinely don&apos;t know, an estimate beats leaving it blank.
@@ -1716,12 +1716,13 @@ export default function RoguePrepForm() {
               <input
                 style={styles.input}
                 placeholder="Your full name"
+                autoComplete="name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
               {errors.fullName ? (
                 <div style={styles.errText} data-err="1">
-                  Best guess is fine, but please don&apos;t leave this blank.
+                  Please add your name.
                 </div>
               ) : null}
             </div>
@@ -1730,6 +1731,7 @@ export default function RoguePrepForm() {
               <input
                 style={styles.input}
                 placeholder="you@example.com"
+                autoComplete="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -1737,7 +1739,7 @@ export default function RoguePrepForm() {
               {errors.email ? (
                 <div style={styles.errText} data-err="1">
                   {isBlankString(email)
-                    ? "Best guess is fine, but please don't leave this blank."
+                    ? "Please add your email so we can match this to your call."
                     : "Please enter a valid email."}
                 </div>
               ) : null}
@@ -1851,6 +1853,11 @@ export default function RoguePrepForm() {
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
+              {parseNumOrNull(annualHouseholdIncome) !== null ? (
+                <div style={styles.calcReadout}>
+                  That&apos;s {fmtMoney(parseNumOrNull(annualHouseholdIncome))} a year.
+                </div>
+              ) : null}
             </div>
           </div>
         )}
@@ -1861,6 +1868,9 @@ export default function RoguePrepForm() {
 
             <div style={styles.fieldBlock}>
               <label style={styles.label}>Credit score</label>
+              <div style={styles.helper}>
+                Any bureau works. Not sure? Just give your best guess.
+              </div>
               <input
                 style={styles.input}
                 placeholder="e.g. 712"
@@ -1871,9 +1881,6 @@ export default function RoguePrepForm() {
                 onChange={(e) => setCreditScore(e.target.value)}
               />
               <PrefillHint field="creditScore" />
-              <div style={styles.helper}>
-                Any bureau works. Not sure? Just give your best guess.
-              </div>
               {errors.creditScore ? (
                 <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
@@ -1959,7 +1966,7 @@ export default function RoguePrepForm() {
                 Personal loan debt ($)
               </label>
               <div style={styles.helper}>
-                Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage. No personal loans? Put 0.
+                Personal loans and BNPL. Car or student loans go in the notes box below. None? Put 0.
               </div>
               <input
                 style={styles.input}
