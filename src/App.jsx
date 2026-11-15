@@ -907,7 +907,7 @@ function shortMoney(n) {
 
 // knownAge (2026-10-23): the setter's age from the pre-fill or the results link. When it is
 // there the age box is hidden; the box is only the fallback for prospects with no setter age.
-function RetirementSnapshot({ income, retirement, knownAge }) {
+function RetirementSnapshot({ income, retirement, knownAge, callLine }) {
   const [ageInput, setAgeInput] = useState("");
   if (!income || income <= 0) return null;
   const hasKnownAge = Number.isInteger(knownAge) && knownAge >= 18 && knownAge <= 100;
@@ -964,7 +964,8 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
             </div>
             <div className="done-snap-cell">
               <div className="done-snap-k">{snap.gap > 0 ? "Gap" : "Ahead by"}</div>
-              <div className={"done-snap-v " + (snap.gap > 0 ? "done-snap-gap" : "done-snap-ahead")}>
+              {/* Gap in white, not red (Patrick 2026-11-15): a future shortfall right after submit reads as a verdict. */}
+              <div className={"done-snap-v" + (snap.gap > 0 ? "" : " done-snap-ahead")}>
                 {shortMoney(snap.gap)}
               </div>
               <div className="done-snap-m">
@@ -973,6 +974,7 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
             </div>
           </div>
         ) : null}
+        {snap && callLine ? <p className="done-call-line">{callLine}</p> : null}
         <p className="done-snap-note">
           *Fidelity&apos;s savings-by-age guideline: 1x income by 30, 3x by 40, 6x by 50, 8x by 60,
           10x by 67. Uses the retirement balance and household income you entered; home equity is not
@@ -999,7 +1001,7 @@ function debtFreeMonths(balance, monthlyRate, payment) {
   return Math.ceil(-Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate));
 }
 
-function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income }) {
+function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income, callLine }) {
   const card = cardDebt > 0 ? cardDebt : 0;
   const loan = loanDebt > 0 ? loanDebt : 0;
   const total = card + loan;
@@ -1033,10 +1035,13 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income 
             <div className="done-snap-m">{money(perDay)} of interest a day</div>
           </div>
           <div className="done-snap-cell">
-            <div className="done-snap-k">Debt-free at your current payments</div>
+            {/* 2026-11-15: monthly debt payments now include car and student loans, so the date is an "if". */}
+            <div className="done-snap-k">Debt-free by</div>
             <div className={"done-snap-v" + (months === null ? " done-snap-gap" : "")}>{freeLabel}</div>
             <div className="done-snap-m">
-              {months === null ? "Payments don't cover the interest" : months + " months from now"}
+              {months === null
+                ? "Payments don't cover the interest"
+                : "if all " + money(monthlyPayment) + " a month went to these cards and loans"}
             </div>
           </div>
           <div className="done-snap-cell">
@@ -1049,6 +1054,7 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income 
             </div>
           </div>
         </div>
+        {callLine ? <p className="done-call-line">{callLine}</p> : null}
         <p className="done-snap-note">
           *Assumes {Math.round(DEBT_CLOCK_APR.card * 100)}% a year on cards and {Math.round(DEBT_CLOCK_APR.loan * 100)}% on
           personal loans, close to the latest US averages (Federal Reserve G.19, August 2026: 22.36% on card
@@ -1103,6 +1109,7 @@ function ShareResults({ link, closerName }) {
           {copied ? "Link copied" : "Copy link"}
         </button>
       </div>
+      <p className="done-share-private">The link shows your answers, so only send it to someone joining the call.</p>
     </div>
   );
 }
@@ -1636,6 +1643,11 @@ export default function RoguePrepForm() {
     };
     const income = parseNumOrNull(annualHouseholdIncome);
     const call = upcomingCall(callTime && callTime.at);
+    // "Jay will go through this with you on Tuesday." under each number (Patrick 2026-11-15).
+    const callDay = call ? callDayWord(call) : "";
+    const callLine =
+      (closerName || "Your strategist") + " will go through this with you " +
+      (!call ? "on the call." : callDay === "today" || callDay === "tomorrow" ? callDay + "." : "on " + callDay + ".");
     const sharedId = paramResults || resultsId;
     const shareLink =
       typeof window !== "undefined" && sharedId
@@ -1697,6 +1709,7 @@ export default function RoguePrepForm() {
                 income={income}
                 retirement={parseNumOrNull(retirement401k)}
                 knownAge={formAge || prefill.age || savedAge}
+                callLine={callLine}
               />
               <DebtClock
                 cardDebt={parseNumOrNull(creditCardDebt)}
@@ -1704,6 +1717,7 @@ export default function RoguePrepForm() {
                 monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
                 housingPayment={parseNumOrNull(monthlyRentMortgage)}
                 income={income}
+                callLine={callLine}
               />
             </div>
           ) : null}
@@ -1712,7 +1726,8 @@ export default function RoguePrepForm() {
 
           <div className="done-stats">
             <div className="done-stat">
-              <div className="done-stat-num">350+</div>
+              {/* 375+: Patrick, 2026-11-15. */}
+              <div className="done-stat-num">375+</div>
               <div className="done-stat-label">Families helped since 2022</div>
             </div>
             <div className="done-stat-divider" />
@@ -1723,6 +1738,8 @@ export default function RoguePrepForm() {
                 <span className="done-tp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
                 <span className="done-tp-score">4.8</span>
               </div>
+              {/* Trustpilot roguefinance.us checked 2026-11-15: 4.8 Excellent, 39 reviews. */}
+              <div className="done-stat-label">from 39 reviews</div>
             </div>
           </div>
 
