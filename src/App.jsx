@@ -381,6 +381,7 @@ const styles = {
   },
   optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
+  blankNote: { fontSize: 13, color: ERR, textAlign: "center", marginBottom: 10, lineHeight: 1.45 },
   prefillHint: { fontSize: 12, color: "#777", marginTop: 6, lineHeight: 1.45 },
   submitErr: {
     fontSize: 13,
@@ -421,7 +422,7 @@ const styles = {
     borderRadius: 8,
     padding: "11px 12px",
     color: TEXT,
-    fontSize: 15,
+    fontSize: 16,
     outline: "none",
     boxSizing: "border-box",
   },
@@ -432,7 +433,7 @@ const styles = {
     borderRadius: 8,
     padding: "11px 12px",
     color: TEXT,
-    fontSize: 14,
+    fontSize: 16,
     outline: "none",
     minHeight: 110,
     resize: "vertical",
@@ -446,7 +447,7 @@ const styles = {
     borderRadius: 8,
     padding: "11px 12px",
     color: TEXT,
-    fontSize: 15,
+    fontSize: 16,
     outline: "none",
     boxSizing: "border-box",
     appearance: "none",
@@ -1096,6 +1097,8 @@ export default function RoguePrepForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null); // null or string, inline error under nav
   const [errors, setErrors] = useState({}); // { fieldKey: boolean }, true means blank-required error
+  // How many required answers were blank on the last Continue (0 = no note by the button).
+  const [blankCount, setBlankCount] = useState(0);
 
   // URL params (best-effort prefill; do not trust)
   const params = useMemo(() => {
@@ -1107,54 +1110,67 @@ export default function RoguePrepForm() {
   const paramCloser = (params.get("closer") || "").trim();
   const paramToken = (params.get("t") || "").trim();
   const paramResults = (params.get("r") || "").trim();
+  // Draft answers (2026-11-15): kept in this tab's sessionStorage until submit, so a reload
+  // (or an in-app browser dropping the tab) doesn't wipe them. Keyed by booking token.
+  const draftKey = "rogue-prep-draft:" + (paramToken || paramEmail.toLowerCase() || "anon");
+  const [draft] = useState(() => {
+    try {
+      const raw = window.sessionStorage.getItem(draftKey);
+      const d = raw ? JSON.parse(raw) : {};
+      return d && typeof d === "object" ? d : {};
+    } catch {
+      return {};
+    }
+  });
+  const fromDraft = (k) => (typeof draft[k] === "string" ? draft[k] : "");
   // One id per page load, so a re-submit after a timeout updates the same saved row.
   const [resultsId] = useState(() => (typeof window !== "undefined" ? newResultsId() : ""));
 
   // ---------------- identity (intro) ----------------
-  const [fullName, setFullName] = useState(paramName || "");
+  const [fullName, setFullName] = useState(fromDraft("fullName") || paramName || "");
   const [email, setEmail] = useState(
-    looksLikeEmail(paramEmail) ? paramEmail.trim() : ""
+    fromDraft("email") || (looksLikeEmail(paramEmail) ? paramEmail.trim() : "")
   );
   const [closerName, setCloserName] = useState(paramCloser);
 
   // ---------------- Step 1: Income ----------------
-  const [annualHouseholdIncome, setAnnualHouseholdIncome] = useState("");
+  const [annualHouseholdIncome, setAnnualHouseholdIncome] = useState(() => fromDraft("annualHouseholdIncome"));
 
   // ---------------- Step 2: Credit & debt ----------------
-  const [creditScore, setCreditScore] = useState("");
-  const [creditCardDebt, setCreditCardDebt] = useState("");
-  const [personalLoanDebt, setPersonalLoanDebt] = useState("");
+  const [creditScore, setCreditScore] = useState(() => fromDraft("creditScore"));
+  const [creditCardDebt, setCreditCardDebt] = useState(() => fromDraft("creditCardDebt"));
+  const [personalLoanDebt, setPersonalLoanDebt] = useState(() => fromDraft("personalLoanDebt"));
   // Debt 12 months ago (2026-11-15). Cards + personal loans, one number, so the
   // prospect sees the trend before the call and the closer can cost out inaction.
-  const [debtLastYear, setDebtLastYear] = useState("");
-  const [totalCreditLimit, setTotalCreditLimit] = useState("");
-  const [debtNotes, setDebtNotes] = useState("");
+  const [debtLastYear, setDebtLastYear] = useState(() => fromDraft("debtLastYear"));
+  const [totalCreditLimit, setTotalCreditLimit] = useState(() => fromDraft("totalCreditLimit"));
+  const [debtNotes, setDebtNotes] = useState(() => fromDraft("debtNotes"));
 
   // ---------------- Step 3: Assets & monthly money ----------------
-  const [retirement401k, setRetirement401k] = useState("");
-  const [homeEquity, setHomeEquity] = useState("");
-  const [otherAssetsValue, setOtherAssetsValue] = useState("");
-  const [otherAssetsNote, setOtherAssetsNote] = useState("");
-  const [savings, setSavings] = useState("");
-  const [monthlyRentMortgage, setMonthlyRentMortgage] = useState("");
-  const [monthlyDebtPayments, setMonthlyDebtPayments] = useState("");
+  const [retirement401k, setRetirement401k] = useState(() => fromDraft("retirement401k"));
+  const [homeEquity, setHomeEquity] = useState(() => fromDraft("homeEquity"));
+  const [otherAssetsValue, setOtherAssetsValue] = useState(() => fromDraft("otherAssetsValue"));
+  const [otherAssetsNote, setOtherAssetsNote] = useState(() => fromDraft("otherAssetsNote"));
+  const [savings, setSavings] = useState(() => fromDraft("savings"));
+  const [monthlyRentMortgage, setMonthlyRentMortgage] = useState(() => fromDraft("monthlyRentMortgage"));
+  const [monthlyDebtPayments, setMonthlyDebtPayments] = useState(() => fromDraft("monthlyDebtPayments"));
   // "Everything else" (2026-11-15): 172 of 482 past answers put rent + debt payments above the
   // typed total, so the total is now worked out from the three boxes and never typed.
-  const [otherMonthlyExpenses, setOtherMonthlyExpenses] = useState("");
+  const [otherMonthlyExpenses, setOtherMonthlyExpenses] = useState(() => fromDraft("otherMonthlyExpenses"));
   const totalMonthlyExpenses = (() => {
     const parts = [monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses].map(parseNumOrNull);
     return parts.some((v) => v === null) ? null : parts.reduce((a, b) => a + b, 0);
   })();
 
   // ---------------- Step 4: You & money ----------------
-  const [bankCheckFrequency, setBankCheckFrequency] = useState("");
-  const [financialLiteracy, setFinancialLiteracy] = useState("");
-  const [moneyRelationshipWord, setMoneyRelationshipWord] = useState("");
-  const [financialFrustration, setFinancialFrustration] = useState("");
+  const [bankCheckFrequency, setBankCheckFrequency] = useState(() => fromDraft("bankCheckFrequency"));
+  const [financialLiteracy, setFinancialLiteracy] = useState(() => fromDraft("financialLiteracy"));
+  const [moneyRelationshipWord, setMoneyRelationshipWord] = useState(() => fromDraft("moneyRelationshipWord"));
+  const [financialFrustration, setFinancialFrustration] = useState(() => fromDraft("financialFrustration"));
   // Long-term goal (2026-11-15): optional, own words, no examples (same reason as frustration).
-  const [financialGoal, setFinancialGoal] = useState("");
-  const [questions, setQuestions] = useState("");
-  const [stateValue, setStateValue] = useState("");
+  const [financialGoal, setFinancialGoal] = useState(() => fromDraft("financialGoal"));
+  const [questions, setQuestions] = useState(() => fromDraft("questions"));
+  const [stateValue, setStateValue] = useState(() => fromDraft("stateValue"));
 
   // Drop a field's "don't leave this blank" line as soon as it has an answer.
   // Before this, the red text stayed up after the prospect typed 0 until the
@@ -1187,6 +1203,16 @@ export default function RoguePrepForm() {
     monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, stateValue,
     bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
   ]);
+
+  // Save the draft on every change; cleared once the submit is received.
+  useEffect(() => {
+    if (step === 5) return;
+    try {
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ fullName, email, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue }));
+    } catch {
+      /* storage blocked or full: the form still works, it just won't survive a reload */
+    }
+  }, [draftKey, step, fullName, email, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue]);
 
   // ---------------- Pre-fill from the setter call ----------------
   // Only fills fields the prospect has not typed in. The snapshot rides along
@@ -1340,6 +1366,10 @@ export default function RoguePrepForm() {
     window.scrollTo(0, 0);
   }, [step]);
 
+  useEffect(() => {
+    setBlankCount(0);
+  }, [step]);
+
   function PrefillHint({ field }) {
     if (prefill.status !== "filled" || !(field in prefill.values)) return null;
     const who = prefill.setter ? `your call with ${prefill.setter}` : "your call with our team";
@@ -1369,7 +1399,6 @@ export default function RoguePrepForm() {
       if (isBlankString(creditCardDebt)) blanks.creditCardDebt = true;
       if (isBlankString(personalLoanDebt)) blanks.personalLoanDebt = true;
       if (isBlankString(totalCreditLimit)) blanks.totalCreditLimit = true;
-      if (isBlankString(debtLastYear)) blanks.debtLastYear = true;
     } else if (step === 3) {
       if (isBlankString(retirement401k)) blanks.retirement401k = true;
       if (isBlankString(homeEquity)) blanks.homeEquity = true;
@@ -1388,15 +1417,25 @@ export default function RoguePrepForm() {
 
     if (Object.keys(blanks).length > 0) {
       setErrors((prev) => ({ ...prev, ...blanks }));
+      setBlankCount(Object.keys(blanks).length);
+      // Bring the first blank into view and put the cursor in it, so Continue never looks dead.
+      setTimeout(() => {
+        const first = document.querySelector("[data-err]");
+        const box = first && first.parentElement;
+        const field = box && box.querySelector("input, select, textarea");
+        if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (field) field.focus({ preventScroll: true });
+      }, 0);
       return;
     }
+    setBlankCount(0);
 
     // Step gate passed. Clear any stale errors for THIS step's required keys,
     // then advance (or submit on step 4).
     const STEP_KEYS_FOR_CLEAR = {
       0: ["fullName", "email", "state"],
       1: ["annualHouseholdIncome"],
-      2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit", "debtLastYear"],
+      2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit"],
       3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "otherMonthlyExpenses"],
       4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
     };
@@ -1485,6 +1524,11 @@ export default function RoguePrepForm() {
       if (!res.ok) throw new Error("webhook HTTP " + res.status);
       // Webhook accepted the POST. Advance.
       saveViewer(email);
+      try {
+        window.sessionStorage.removeItem(draftKey);
+      } catch {
+        /* nothing to clear */
+      }
       // Swap the booking link (name, email, token) for the results link, so a refresh or a
       // bookmark reopens this page with the snapshot.
       try {
@@ -1676,7 +1720,7 @@ export default function RoguePrepForm() {
                 onChange={(e) => setFullName(e.target.value)}
               />
               {errors.fullName ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1691,7 +1735,7 @@ export default function RoguePrepForm() {
                 onChange={(e) => setEmail(e.target.value)}
               />
               {errors.email ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   {isBlankString(email)
                     ? "Best guess is fine, but please don't leave this blank."
                     : "Please enter a valid email."}
@@ -1713,13 +1757,18 @@ export default function RoguePrepForm() {
               </select>
               <PrefillHint field="state" />
               {errors.state ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Please select your state.
                 </div>
               ) : null}
             </div>
           </div>
 
+          {blankCount > 0 ? (
+            <div style={styles.blankNote}>
+              {blankCount === 1 ? "1 answer is still blank above." : `${blankCount} answers are still blank above.`}
+            </div>
+          ) : null}
           <div style={styles.nav}>
             <button type="button" style={styles.btnPrimary} onClick={goNext}>
               Start
@@ -1798,7 +1847,7 @@ export default function RoguePrepForm() {
               />
               <PrefillHint field="annualHouseholdIncome" />
               {errors.annualHouseholdIncome ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1826,7 +1875,7 @@ export default function RoguePrepForm() {
                 Any bureau works. Not sure? Just give your best guess.
               </div>
               {errors.creditScore ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1847,7 +1896,7 @@ export default function RoguePrepForm() {
               />
               <PrefillHint field="creditCardDebt" />
               {errors.creditCardDebt ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1868,7 +1917,7 @@ export default function RoguePrepForm() {
                 onChange={(e) => setTotalCreditLimit(e.target.value)}
               />
               {errors.totalCreditLimit ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1922,7 +1971,7 @@ export default function RoguePrepForm() {
               />
               <PrefillHint field="personalLoanDebt" />
               {errors.personalLoanDebt ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1934,14 +1983,17 @@ export default function RoguePrepForm() {
                 const pld = parseNumOrNull(personalLoanDebt);
                 if (ccd === null || pld === null) return null;
                 return (
-                  <div style={styles.calcReadout}>
+                  <div style={{ ...styles.calcReadout, marginBottom: 12 }}>
                     Right now you owe roughly {fmtMoney(ccd + pld)} across credit cards and personal loans.
                   </div>
                 );
               })()}
-              <label style={styles.label}>Where would you say that was 12 months ago? ($)</label>
+              <label style={styles.label}>
+                Roughly what did you owe on cards and personal loans 12 months ago? ($)
+                <span style={styles.optionalTag}>(optional)</span>
+              </label>
               <div style={styles.helper}>
-                Credit cards plus personal loans, roughly this time last year. A best guess is fine. Had none? Put 0.
+                A best guess is fine. Had none? Put 0. Not sure? Leave it blank.
               </div>
               <input
                 style={styles.input}
@@ -1951,23 +2003,6 @@ export default function RoguePrepForm() {
                 value={debtLastYear}
                 onChange={(e) => setDebtLastYear(e.target.value)}
               />
-              {errors.debtLastYear ? (
-                <div style={styles.errText}>
-                  Best guess is fine, but please don&apos;t leave this blank.
-                </div>
-              ) : null}
-              {(() => {
-                const ccd = parseNumOrNull(creditCardDebt);
-                const pld = parseNumOrNull(personalLoanDebt);
-                const ly = parseNumOrNull(debtLastYear);
-                if (ccd === null || pld === null || ly === null) return null;
-                const diff = ccd + pld - ly;
-                let body;
-                if (Math.abs(diff) < 100) body = <>That&apos;s about the same as a year ago.</>;
-                else if (diff > 0) body = <>That&apos;s about {fmtMoney(diff)} more than a year ago.</>;
-                else body = <>That&apos;s about {fmtMoney(-diff)} less than a year ago.</>;
-                return <div style={styles.calcReadout}>{body}</div>;
-              })()}
             </div>
 
             <div style={styles.fieldBlockLast}>
@@ -2008,7 +2043,7 @@ export default function RoguePrepForm() {
                 />
                 <PrefillHint field="savings" />
                 {errors.savings ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -2029,7 +2064,7 @@ export default function RoguePrepForm() {
                 />
                 <PrefillHint field="retirement401k" />
                 {errors.retirement401k ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -2050,7 +2085,7 @@ export default function RoguePrepForm() {
                 />
                 <PrefillHint field="homeEquity" />
                 {errors.homeEquity ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -2070,7 +2105,7 @@ export default function RoguePrepForm() {
                   onChange={(e) => setOtherAssetsValue(e.target.value)}
                 />
                 {errors.otherAssetsValue ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -2092,9 +2127,9 @@ export default function RoguePrepForm() {
               <div style={styles.cardLabel}>Monthly money</div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>Monthly rent / mortgage (your housing payment, $)</label>
+                <label style={styles.label}>Monthly rent / mortgage ($)</label>
                 <div style={styles.helper}>
-                  If you own outright or it&apos;s covered, put 0.
+                  Your housing payment. If you own outright or it&apos;s covered, put 0.
                 </div>
                 <input
                   style={styles.input}
@@ -2105,16 +2140,16 @@ export default function RoguePrepForm() {
                   onChange={(e) => setMonthlyRentMortgage(e.target.value)}
                 />
                 {errors.monthlyRentMortgage ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
               </div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>Monthly debt payments (cards, loans, car, student loans, $)</label>
+                <label style={styles.label}>Monthly debt payments ($)</label>
                 <div style={styles.helper}>
-                  The total you pay each month across all of them. If you&apos;re not paying anything toward debt right now, put 0.
+                  Cards, loans, car, student loans: the total you pay each month across all of them. If you&apos;re not paying anything toward debt right now, put 0.
                 </div>
                 <input
                   style={styles.input}
@@ -2125,14 +2160,14 @@ export default function RoguePrepForm() {
                   onChange={(e) => setMonthlyDebtPayments(e.target.value)}
                 />
                 {errors.monthlyDebtPayments ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
               </div>
 
               <div style={styles.fieldBlockLast}>
-                <label style={styles.label}>Everything else, per month (food, gas, bills, insurance, $)</label>
+                <label style={styles.label}>Everything else, per month ($)</label>
                 <div style={styles.helper}>
                   Not rent or debt payments. Groceries, gas, utilities, insurance, phone, subscriptions, childcare, eating out. Rough number is fine.
                 </div>
@@ -2145,7 +2180,7 @@ export default function RoguePrepForm() {
                   onChange={(e) => setOtherMonthlyExpenses(e.target.value)}
                 />
                 {errors.otherMonthlyExpenses ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -2178,7 +2213,7 @@ export default function RoguePrepForm() {
                   ))}
                 </select>
                 {errors.bankCheckFrequency ? (
-                  <div style={styles.errText}>Please pick one.</div>
+                  <div style={styles.errText} data-err="1">Please pick one.</div>
                 ) : null}
               </div>
 
@@ -2197,7 +2232,7 @@ export default function RoguePrepForm() {
                   ))}
                 </select>
                 {errors.financialLiteracy ? (
-                  <div style={styles.errText}>Please pick a number.</div>
+                  <div style={styles.errText} data-err="1">Please pick a number.</div>
                 ) : null}
               </div>
 
@@ -2212,7 +2247,7 @@ export default function RoguePrepForm() {
                   onChange={(e) => setMoneyRelationshipWord(e.target.value)}
                 />
                 {errors.moneyRelationshipWord ? (
-                  <div style={styles.errText}>One word is all it takes.</div>
+                  <div style={styles.errText} data-err="1">One word is all it takes.</div>
                 ) : null}
               </div>
 
@@ -2265,6 +2300,11 @@ export default function RoguePrepForm() {
           </>
         )}
 
+        {blankCount > 0 ? (
+          <div style={styles.blankNote}>
+            {blankCount === 1 ? "1 answer is still blank above." : `${blankCount} answers are still blank above.`}
+          </div>
+        ) : null}
         <div style={styles.nav}>
           <button type="button" style={styles.btnSecondary} onClick={goBack}>Back</button>
           <button
