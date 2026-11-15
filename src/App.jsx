@@ -8,10 +8,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
 // Andy plays at 1.5x with captions on by default (Patrick 2026-10-04); viewers can still change both in the player.
-const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true";
+const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?playbackRate=1.5&controlsVisibleOnLoad=false&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true";
 const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
-const COMPLETION_VIDEO_BODY =
-  "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
+// "About 15 minutes": 23:49 at the player's default 1.5x (Patrick 2026-11-15).
+const COMPLETION_VIDEO_BODY = "About 15 minutes. Watch it before your call so the call can start from your numbers.";
 // Chapters (2026-10-25, Oct 20 revamp plan): engagement on the 23:49 cut is 57%, so people can
 // jump to the part they care about. Seconds checked against the Wistia captions; a tap reloads
 // the player at that second.
@@ -25,14 +25,28 @@ const TRAINING_CHAPTERS = [
   { t: 1140, label: "People who sat where you are now" },
 ];
 
-// Six break-out videos from Andy, one question each. Top row bank access,
-// coaching, affording it (moved up 2026-10-03, best completion rate); bottom
-// row partner, debt, deciding. Wistia hashed ids.
+// Six break-out videos from Andy, one question each. Order 2026-11-15 (Patrick, Wistia play rates):
+// deciding first (34% play rate and the most hours watched while it sat last), affording it (39%),
+// bank access, coaching, debt type, partner last (20%). Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
 // Run times from Wistia (2026-10-25), rounded to the nearest second like the Wistia player shows them; 10:36 in total. Stills = each media's custom thumbnail.
 const PARTNER_VIDEO_ID = "ywdmppplme";
 const WISTIA_STILL = "https://embed-ssl.wistia.com/deliveries/";
 const BREAKOUT_VIDEOS = [
+  {
+    id: "w9d1mfco1k",
+    len: "3:09",
+    still: "883b88b099b8ee185fdbb0db11ed5da3",
+    q: "Do I have to decide on the call?",
+    a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
+  },
+  {
+    id: "ncze2s7sqh",
+    len: "1:55",
+    still: "9a962b60838645f3ab609ec6c4c55f7e",
+    q: "What if I can't afford this right now?",
+    a: "Don't do the math against today's balance. What standing still costs, in interest.",
+  },
   {
     id: "r90kiktykf",
     len: "0:52",
@@ -48,11 +62,11 @@ const BREAKOUT_VIDEOS = [
     a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
   },
   {
-    id: "ncze2s7sqh",
-    len: "1:55",
-    still: "9a962b60838645f3ab609ec6c4c55f7e",
-    q: "What if I can't afford this right now?",
-    a: "Don't do the math against today's balance. What standing still costs, in interest.",
+    id: "x1qh1guv4j",
+    len: "1:21",
+    still: "b62863bf8a7d1a00317dfa90daa11b5e",
+    q: "Is this debt consolidation? Or debt settlement?",
+    a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
   },
   {
     id: "ywdmppplme",
@@ -61,25 +75,13 @@ const BREAKOUT_VIDEOS = [
     q: "What if I want to do this without my partner?",
     a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
   },
-  {
-    id: "x1qh1guv4j",
-    len: "1:21",
-    still: "b62863bf8a7d1a00317dfa90daa11b5e",
-    q: "Is this debt consolidation? Or debt settlement?",
-    a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
-  },
-  {
-    id: "w9d1mfco1k",
-    len: "3:09",
-    still: "883b88b099b8ee185fdbb0db11ed5da3",
-    q: "Do I have to decide on the call?",
-    a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
-  },
 ];
 
 // Client wins wall: Slack screenshots from the client channels, names blurred.
 // Picked 2026-10-19 from wins-web.zip (85 files, 34 leaked a name or face and
 // were dropped). Files in public/prep-assets/wins so the /prep proxy serves them.
+// 2026-11-15 (Patrick): win-s74 dropped (too small to read on a phone); win-s90b = red name bar
+// re-blurred grey like the rest; win-s78b = cropped above Slack's message box. Originals kept.
 // Added at the bottom 2026-10-25 (Patrick). win-s88 (credit score up 75 points) held back for a
 // compliance call, same as the credit-score reviews.
 const WINS_TITLE = "From our client channel";
@@ -90,15 +92,17 @@ const WINS = [
   { file: "win-s92.webp", w: 646, h: 398, alt: "Client couple: just over $8,000 left across our accounts after the month's major bills." },
   { file: "win-s58.webp", w: 900, h: 395, alt: "Client: I don't even remember when payday is now, and I spend on half the stuff I used to." },
   { file: "win-s73.webp", w: 900, h: 194, alt: "Client: got everything automated and organized, so much relief." },
-  { file: "win-s74.webp", w: 900, h: 323, alt: "Client: started in debt with negative cash flow, now positive cash flow and three quarters of a month in savings." },
-  { file: "win-s90.webp", w: 900, h: 577, alt: "Client: husband's $900 bonus went automatically into savings." },
-  { file: "win-s78.webp", w: 900, h: 415, alt: "Client: slept well for the first time in so long after paying everything off or down." },
+  { file: "win-s90b.webp", w: 900, h: 540, alt: "Client: husband's $900 bonus went automatically into savings." },
+  { file: "win-s78b.webp", w: 900, h: 150, alt: "Client: slept well for the first time in so long after paying everything off or down." },
 ];
 
 // Trustpilot reviews, scanned 2026-10-25 (39 live, all 5 stars), newest first; the page shows the newest 9 and links to
 // Trustpilot for the rest (Patrick 2026-10-25). Excerpts in the reviewer's
 // own words, cut only, never reworded. Held back for a compliance call: Kara Turrentine, Lissetth Jarquin,
 // Jennifer Crabtree (credit-score claims), Daniel Geyer (investment returns).
+// Picked 2026-11-15 (Patrick), one per pre-call fear: heavy debt, a couple, a skeptic. Shown first;
+// the next 6 newest sit behind "Show 6 more reviews".
+const PICKED_REVIEWS = ["Michael Kemper", "Jimmy Vanaria", "Dave P"];
 const REVIEWS = [
   {
     "name": "Gary",
@@ -288,6 +292,9 @@ const RESULTS_URL = import.meta.env.VITE_RESULTS_URL || "https://uberops.app.n8n
 // Step tracking (2026-11-15): one small ping each time someone reaches a step, so we can see
 // where people stop and whether stopping goes with a no-show. No answers or money numbers are
 // sent, only the step, the page-load id and the booking token (n8n reads the contact from it).
+// Demo previews only (never set in production): a fixed pre-fill reply so a reviewer sees the
+// setter numbers, age and call card without any live lookup.
+const DEMO_PREFILL = import.meta.env.VITE_DEMO_PREFILL || "";
 const TRACK_URL = import.meta.env.VITE_TRACK_URL || "https://uberops.app.n8n.cloud/webhook/prep-track";
 const STEP_EVENTS = ["opened", "income", "credit_debt", "assets_monthly", "you_and_money", "submitted"];
 
@@ -331,7 +338,7 @@ const styles = {
   privacy: {
     textAlign: "center",
     fontSize: 11,
-    color: "#555",
+    color: "#888",
     marginBottom: 24,
     lineHeight: 1.5,
     padding: "0 12px",
@@ -379,8 +386,9 @@ const styles = {
     fontWeight: 500,
     lineHeight: 1.35,
   },
-  optionalTag: { color: "#666", fontWeight: 400, marginLeft: 4 },
+  optionalTag: { color: "#888", fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
+  blankNote: { fontSize: 13, color: ERR, textAlign: "center", marginBottom: 10, lineHeight: 1.45 },
   prefillHint: { fontSize: 12, color: "#777", marginTop: 6, lineHeight: 1.45 },
   submitErr: {
     fontSize: 13,
@@ -407,21 +415,21 @@ const styles = {
   },
   calcConfirm: {
     fontSize: 12,
-    color: "#777",
+    color: "#9a9a9a",
     marginTop: 8,
     lineHeight: 1.45,
     fontStyle: "italic",
   },
-  helper: { fontSize: 12, color: "#777", marginBottom: 8, lineHeight: 1.45 },
+  helper: { fontSize: 13, color: "#9a9a9a", marginBottom: 8, lineHeight: 1.45 },
   nudge: { fontSize: 12, color: NUDGE, marginTop: 6, lineHeight: 1.45 },
   input: {
     width: "100%",
     background: INPUT_BG,
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
-    padding: "11px 12px",
+    padding: "12px 12px",
     color: TEXT,
-    fontSize: 15,
+    fontSize: 16,
     outline: "none",
     boxSizing: "border-box",
   },
@@ -430,9 +438,9 @@ const styles = {
     background: INPUT_BG,
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
-    padding: "11px 12px",
+    padding: "12px 12px",
     color: TEXT,
-    fontSize: 14,
+    fontSize: 16,
     outline: "none",
     minHeight: 110,
     resize: "vertical",
@@ -444,9 +452,9 @@ const styles = {
     background: INPUT_BG,
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
-    padding: "11px 12px",
+    padding: "12px 12px",
     color: TEXT,
-    fontSize: 15,
+    fontSize: 16,
     outline: "none",
     boxSizing: "border-box",
     appearance: "none",
@@ -755,6 +763,68 @@ function VideoCard({ viewer, startAt }) {
   );
 }
 
+// Call time (2026-11-15): the pre-fill returns the closer call's start (and end) from GHL.
+// Shown in the prospect's own time zone. A call more than an hour gone is treated as no call.
+function upcomingCall(callAt) {
+  const t = Date.parse(callAt || "");
+  if (!Number.isFinite(t) || t < Date.now() - 3600 * 1000) return null;
+  return new Date(t);
+}
+function callDayWord(d) {
+  const start = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((start(d) - start(new Date())) / 864e5);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days > 1 && days < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function callWhen(d) {
+  const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return day + " at " + time;
+}
+function callZone(d) {
+  try {
+    const part = new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(d).find((x) => x.type === "timeZoneName");
+    return part ? part.value : "";
+  } catch {
+    return "";
+  }
+}
+// One-tap calendar file; iPhone opens it in Calendar, Android hands it to the calendar app.
+function downloadCallIcs(start, end, closerName) {
+  const z = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const stop = end && end > start ? end : new Date(start.getTime() + 60 * 60 * 1000);
+  const who = closerName ? " with " + closerName : "";
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Rogue Finance//Prep//EN", "BEGIN:VEVENT",
+    "UID:" + z(start) + "-prep@roguefinance.us", "DTSTAMP:" + z(new Date()),
+    "DTSTART:" + z(start), "DTEND:" + z(stop),
+    "SUMMARY:Rogue Finance call" + who,
+    "DESCRIPTION:Your join link is in your confirmation email.",
+    "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "rogue-finance-call.ics";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Goal card (2026-11-15): the prospect's own 3-year goal, word for word. Hidden when blank, when it
+// has no letters, when it is a don't-know answer, or when even its first sentence runs past ~2 lines.
+function goalToShow(raw) {
+  const t = String(raw || "").trim().replace(/\s+/g, " ");
+  if (!t || !/[a-z]/i.test(t)) return "";
+  if (/^(idk|i don'?t know|dunno|not sure|unsure|n\/?a|na|none|nothing|no idea|unknown|test|\?+)[.!? ]*$/i.test(t)) return "";
+  if (t.length <= 140) return t;
+  const first = (t.match(/^.*?[.!?](\s|$)/) || [""])[0].trim();
+  return first && first.length <= 140 ? first : "";
+}
+
 function fmtClock(sec) {
   return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
 }
@@ -855,7 +925,7 @@ function shortMoney(n) {
 
 // knownAge (2026-10-23): the setter's age from the pre-fill or the results link. When it is
 // there the age box is hidden; the box is only the fallback for prospects with no setter age.
-function RetirementSnapshot({ income, retirement, knownAge }) {
+function RetirementSnapshot({ income, retirement, knownAge, callLine }) {
   const [ageInput, setAgeInput] = useState("");
   if (!income || income <= 0) return null;
   const hasKnownAge = Number.isInteger(knownAge) && knownAge >= 18 && knownAge <= 100;
@@ -912,7 +982,8 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
             </div>
             <div className="done-snap-cell">
               <div className="done-snap-k">{snap.gap > 0 ? "Gap" : "Ahead by"}</div>
-              <div className={"done-snap-v " + (snap.gap > 0 ? "done-snap-gap" : "done-snap-ahead")}>
+              {/* Gap in white, not red (Patrick 2026-11-15): a future shortfall right after submit reads as a verdict. */}
+              <div className={"done-snap-v" + (snap.gap > 0 ? "" : " done-snap-ahead")}>
                 {shortMoney(snap.gap)}
               </div>
               <div className="done-snap-m">
@@ -921,6 +992,7 @@ function RetirementSnapshot({ income, retirement, knownAge }) {
             </div>
           </div>
         ) : null}
+        {snap && callLine ? <p className="done-call-line">{callLine}</p> : null}
         <p className="done-snap-note">
           *Fidelity&apos;s savings-by-age guideline: 1x income by 30, 3x by 40, 6x by 50, 8x by 60,
           10x by 67. Uses the retirement balance and household income you entered; home equity is not
@@ -947,7 +1019,7 @@ function debtFreeMonths(balance, monthlyRate, payment) {
   return Math.ceil(-Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate));
 }
 
-function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income }) {
+function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income, callLine }) {
   const card = cardDebt > 0 ? cardDebt : 0;
   const loan = loanDebt > 0 ? loanDebt : 0;
   const total = card + loan;
@@ -981,10 +1053,13 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income 
             <div className="done-snap-m">{money(perDay)} of interest a day</div>
           </div>
           <div className="done-snap-cell">
-            <div className="done-snap-k">Debt-free at your current payments</div>
+            {/* 2026-11-15: monthly debt payments now include car and student loans, so the date is an "if". */}
+            <div className="done-snap-k">Debt-free by</div>
             <div className={"done-snap-v" + (months === null ? " done-snap-gap" : "")}>{freeLabel}</div>
             <div className="done-snap-m">
-              {months === null ? "Payments don't cover the interest" : months + " months from now"}
+              {months === null
+                ? "Payments don't cover the interest"
+                : "if all " + money(monthlyPayment) + " a month went to these cards and loans"}
             </div>
           </div>
           <div className="done-snap-cell">
@@ -997,6 +1072,7 @@ function DebtClock({ cardDebt, loanDebt, monthlyPayment, housingPayment, income 
             </div>
           </div>
         </div>
+        {callLine ? <p className="done-call-line">{callLine}</p> : null}
         <p className="done-snap-note">
           *Assumes {Math.round(DEBT_CLOCK_APR.card * 100)}% a year on cards and {Math.round(DEBT_CLOCK_APR.loan * 100)}% on
           personal loans, close to the latest US averages (Federal Reserve G.19, August 2026: 22.36% on card
@@ -1031,7 +1107,7 @@ function ShareResults({ link, closerName }) {
     }
   };
   return (
-    <div className="done-share">
+    <div className="done-share" id="share">
       <h2 className="done-share-title">Is someone else joining you on this call?</h2>
       <p className="done-share-body">
         If you share money with a partner, they join the call too. Send them your results so they see the same
@@ -1051,6 +1127,7 @@ function ShareResults({ link, closerName }) {
           {copied ? "Link copied" : "Copy link"}
         </button>
       </div>
+      <p className="done-share-private">The link shows your answers, so only send it to someone joining the call.</p>
     </div>
   );
 }
@@ -1096,6 +1173,8 @@ export default function RoguePrepForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null); // null or string, inline error under nav
   const [errors, setErrors] = useState({}); // { fieldKey: boolean }, true means blank-required error
+  // How many required answers were blank on the last Continue (0 = no note by the button).
+  const [blankCount, setBlankCount] = useState(0);
 
   // URL params (best-effort prefill; do not trust)
   const params = useMemo(() => {
@@ -1107,53 +1186,81 @@ export default function RoguePrepForm() {
   const paramCloser = (params.get("closer") || "").trim();
   const paramToken = (params.get("t") || "").trim();
   const paramResults = (params.get("r") || "").trim();
+  // Draft answers (2026-11-15): kept in this tab's sessionStorage until submit, so a reload
+  // (or an in-app browser dropping the tab) doesn't wipe them. Keyed by booking token.
+  const draftKey = "rogue-prep-draft:" + (paramToken || paramEmail.toLowerCase() || "anon");
+  const [draft] = useState(() => {
+    try {
+      const raw = window.sessionStorage.getItem(draftKey);
+      const d = raw ? JSON.parse(raw) : {};
+      return d && typeof d === "object" ? d : {};
+    } catch {
+      return {};
+    }
+  });
+  const fromDraft = (k) => (typeof draft[k] === "string" ? draft[k] : "");
+  // Closer call time from the pre-fill or the results link: { at, end } ISO strings.
+  const [callTime, setCallTime] = useState(() => (draft.callTime && typeof draft.callTime.at === "string" ? draft.callTime : null));
   // One id per page load, so a re-submit after a timeout updates the same saved row.
   const [resultsId] = useState(() => (typeof window !== "undefined" ? newResultsId() : ""));
 
   // ---------------- identity (intro) ----------------
-  const [fullName, setFullName] = useState(paramName || "");
+  const [fullName, setFullName] = useState(fromDraft("fullName") || paramName || "");
   const [email, setEmail] = useState(
-    looksLikeEmail(paramEmail) ? paramEmail.trim() : ""
+    fromDraft("email") || (looksLikeEmail(paramEmail) ? paramEmail.trim() : "")
   );
   const [closerName, setCloserName] = useState(paramCloser);
 
   // ---------------- Step 1: Income ----------------
-  const [annualHouseholdIncome, setAnnualHouseholdIncome] = useState("");
+  // Age (2026-11-15): asked on step 1, required, pre-filled from the setter call when known.
+  const [ageValue, setAgeValue] = useState(() => fromDraft("ageValue"));
+  const [annualHouseholdIncome, setAnnualHouseholdIncome] = useState(() => fromDraft("annualHouseholdIncome"));
 
   // ---------------- Step 2: Credit & debt ----------------
-  const [creditScore, setCreditScore] = useState("");
-  const [creditCardDebt, setCreditCardDebt] = useState("");
-  const [personalLoanDebt, setPersonalLoanDebt] = useState("");
-  const [totalCreditLimit, setTotalCreditLimit] = useState("");
-  const [debtNotes, setDebtNotes] = useState("");
+  const [creditScore, setCreditScore] = useState(() => fromDraft("creditScore"));
+  const [creditCardDebt, setCreditCardDebt] = useState(() => fromDraft("creditCardDebt"));
+  const [personalLoanDebt, setPersonalLoanDebt] = useState(() => fromDraft("personalLoanDebt"));
+  // Debt 12 months ago (2026-11-15). Cards + personal loans, one number, so the
+  // prospect sees the trend before the call and the closer can cost out inaction.
+  const [debtLastYear, setDebtLastYear] = useState(() => fromDraft("debtLastYear"));
+  const [totalCreditLimit, setTotalCreditLimit] = useState(() => fromDraft("totalCreditLimit"));
+  const [debtNotes, setDebtNotes] = useState(() => fromDraft("debtNotes"));
 
   // ---------------- Step 3: Assets & monthly money ----------------
-  const [retirement401k, setRetirement401k] = useState("");
-  const [homeEquity, setHomeEquity] = useState("");
-  const [otherAssetsValue, setOtherAssetsValue] = useState("");
-  const [otherAssetsNote, setOtherAssetsNote] = useState("");
-  const [savings, setSavings] = useState("");
-  const [monthlyRentMortgage, setMonthlyRentMortgage] = useState("");
-  const [monthlyDebtPayments, setMonthlyDebtPayments] = useState("");
-  const [totalMonthlyExpenses, setTotalMonthlyExpenses] = useState("");
+  const [retirement401k, setRetirement401k] = useState(() => fromDraft("retirement401k"));
+  const [homeEquity, setHomeEquity] = useState(() => fromDraft("homeEquity"));
+  const [otherAssetsValue, setOtherAssetsValue] = useState(() => fromDraft("otherAssetsValue"));
+  const [otherAssetsNote, setOtherAssetsNote] = useState(() => fromDraft("otherAssetsNote"));
+  const [savings, setSavings] = useState(() => fromDraft("savings"));
+  const [monthlyRentMortgage, setMonthlyRentMortgage] = useState(() => fromDraft("monthlyRentMortgage"));
+  const [monthlyDebtPayments, setMonthlyDebtPayments] = useState(() => fromDraft("monthlyDebtPayments"));
+  // "Everything else" (2026-11-15): 172 of 482 past answers put rent + debt payments above the
+  // typed total, so the total is now worked out from the three boxes and never typed.
+  const [otherMonthlyExpenses, setOtherMonthlyExpenses] = useState(() => fromDraft("otherMonthlyExpenses"));
+  const totalMonthlyExpenses = (() => {
+    const parts = [monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses].map(parseNumOrNull);
+    return parts.some((v) => v === null) ? null : parts.reduce((a, b) => a + b, 0);
+  })();
 
   // ---------------- Step 4: You & money ----------------
-  const [bankCheckFrequency, setBankCheckFrequency] = useState("");
-  const [financialLiteracy, setFinancialLiteracy] = useState("");
-  const [moneyRelationshipWord, setMoneyRelationshipWord] = useState("");
-  const [financialFrustration, setFinancialFrustration] = useState("");
-  const [questions, setQuestions] = useState("");
-  const [stateValue, setStateValue] = useState("");
+  const [bankCheckFrequency, setBankCheckFrequency] = useState(() => fromDraft("bankCheckFrequency"));
+  const [financialLiteracy, setFinancialLiteracy] = useState(() => fromDraft("financialLiteracy"));
+  const [moneyRelationshipWord, setMoneyRelationshipWord] = useState(() => fromDraft("moneyRelationshipWord"));
+  const [financialFrustration, setFinancialFrustration] = useState(() => fromDraft("financialFrustration"));
+  // Long-term goal (2026-11-15): optional, own words, no examples (same reason as frustration).
+  const [financialGoal, setFinancialGoal] = useState(() => fromDraft("financialGoal"));
+  const [questions, setQuestions] = useState(() => fromDraft("questions"));
+  const [stateValue, setStateValue] = useState(() => fromDraft("stateValue"));
 
   // Drop a field's "don't leave this blank" line as soon as it has an answer.
   // Before this, the red text stayed up after the prospect typed 0 until the
   // next Next tap, so a valid answer looked rejected.
   useEffect(() => {
     const values = {
-      fullName, email, annualHouseholdIncome,
-      creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
+      fullName, email, age: ageValue, annualHouseholdIncome,
+      creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit,
       retirement401k, homeEquity, otherAssetsValue, savings,
-      monthlyRentMortgage, monthlyDebtPayments, totalMonthlyExpenses, state: stateValue,
+      monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, state: stateValue,
       bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
     };
     setErrors((prev) => {
@@ -1170,12 +1277,22 @@ export default function RoguePrepForm() {
       return changed ? next : prev;
     });
   }, [
-    fullName, email, annualHouseholdIncome,
-    creditScore, creditCardDebt, personalLoanDebt, totalCreditLimit,
+    fullName, email, ageValue, annualHouseholdIncome,
+    creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit,
     retirement401k, homeEquity, otherAssetsValue, savings,
-    monthlyRentMortgage, monthlyDebtPayments, totalMonthlyExpenses, stateValue,
+    monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, stateValue,
     bankCheckFrequency, financialLiteracy, moneyRelationshipWord,
   ]);
+
+  // Save the draft on every change; cleared once the submit is received.
+  useEffect(() => {
+    if (step === 5) return;
+    try {
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ callTime, fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue }));
+    } catch {
+      /* storage blocked or full: the form still works, it just won't survive a reload */
+    }
+  }, [draftKey, step, callTime, fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue]);
 
   // ---------------- Pre-fill from the setter call ----------------
   // Only fills fields the prospect has not typed in. The snapshot rides along
@@ -1190,6 +1307,8 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
+  // Reviews: 3 picked up top, the rest behind "Show 6 more reviews".
+  const [moreReviews, setMoreReviews] = useState(false);
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
@@ -1202,14 +1321,18 @@ export default function RoguePrepForm() {
       if (v === undefined || v === null) return;
       setter((cur) => (isBlankString(cur) ? String(v) : cur));
     };
-    fetch(PREFILL_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ t: paramToken }),
-      signal: controller.signal,
-    })
-      .then((r) => r.json())
+    (DEMO_PREFILL
+      ? Promise.resolve(JSON.parse(DEMO_PREFILL))
+      : fetch(PREFILL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ t: paramToken }),
+          signal: controller.signal,
+        }).then((r) => r.json())
+    )
       .then((j) => {
+        // The call time comes back on every valid-token reply, even with no setter numbers.
+        if (j && j.callAt) setCallTime({ at: String(j.callAt), end: j.callEnd ? String(j.callEnd) : "" });
         if (!j || !j.ok || !j.values) {
           setPrefill((p) => ({ ...p, reason: (j && j.reason) || "error" }));
           return;
@@ -1231,6 +1354,7 @@ export default function RoguePrepForm() {
           values: v,
           age: Number.isInteger(j.age) ? j.age : null,
         });
+        if (Number.isInteger(j.age)) fill(setAgeValue, j.age);
       })
       .catch((err) => {
         setPrefill((p) => ({ ...p, reason: err && err.name === "AbortError" ? "timeout" : "error" }));
@@ -1268,6 +1392,7 @@ export default function RoguePrepForm() {
         if (j.monthlyDebtPayments != null) setMonthlyDebtPayments(String(j.monthlyDebtPayments));
         if (j.monthlyRentMortgage != null) setMonthlyRentMortgage(String(j.monthlyRentMortgage));
         if (Number.isInteger(j.age)) setSavedAge(j.age);
+        if (j.callAt) setCallTime({ at: String(j.callAt), end: j.callEnd ? String(j.callEnd) : "" });
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
         if (looksLikeEmail(j.email)) setEmail(j.email.trim());
       })
@@ -1329,6 +1454,10 @@ export default function RoguePrepForm() {
     window.scrollTo(0, 0);
   }, [step]);
 
+  useEffect(() => {
+    setBlankCount(0);
+  }, [step]);
+
   function PrefillHint({ field }) {
     if (prefill.status !== "filled" || !(field in prefill.values)) return null;
     const who = prefill.setter ? `your call with ${prefill.setter}` : "your call with our team";
@@ -1350,7 +1479,11 @@ export default function RoguePrepForm() {
     if (step === 0) {
       if (isBlankString(fullName)) blanks.fullName = true;
       if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
+      if (isBlankString(stateValue)) blanks.state = true;
     } else if (step === 1) {
+      const ageN = Number(ageValue);
+      if (isBlankString(ageValue)) blanks.age = true;
+      else if (!Number.isInteger(ageN) || ageN < 18 || ageN > 100) blanks.age = "range";
       if (isBlankString(annualHouseholdIncome)) blanks.annualHouseholdIncome = true;
     } else if (step === 2) {
       if (isBlankString(creditScore)) blanks.creditScore = true;
@@ -1364,28 +1497,37 @@ export default function RoguePrepForm() {
       if (isBlankString(savings)) blanks.savings = true;
       if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
       if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
-      if (isBlankString(totalMonthlyExpenses)) blanks.totalMonthlyExpenses = true;
-      if (isBlankString(stateValue)) blanks.state = true;
+      if (isBlankString(otherMonthlyExpenses)) blanks.otherMonthlyExpenses = true;
       // otherAssetsNote stays OPTIONAL
     } else if (step === 4) {
       if (isBlankString(bankCheckFrequency)) blanks.bankCheckFrequency = true;
       if (isBlankString(financialLiteracy)) blanks.financialLiteracy = true;
       if (isBlankString(moneyRelationshipWord)) blanks.moneyRelationshipWord = true;
-      // financialFrustration and questions stay OPTIONAL
+      // financialFrustration, financialGoal and questions stay OPTIONAL
     }
 
     if (Object.keys(blanks).length > 0) {
       setErrors((prev) => ({ ...prev, ...blanks }));
+      setBlankCount(Object.keys(blanks).length);
+      // Bring the first blank into view and put the cursor in it, so Continue never looks dead.
+      setTimeout(() => {
+        const first = document.querySelector("[data-err]");
+        const box = first && first.parentElement;
+        const field = box && box.querySelector("input, select, textarea");
+        if (box) box.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (field) field.focus({ preventScroll: true });
+      }, 0);
       return;
     }
+    setBlankCount(0);
 
     // Step gate passed. Clear any stale errors for THIS step's required keys,
     // then advance (or submit on step 4).
     const STEP_KEYS_FOR_CLEAR = {
-      0: ["fullName", "email"],
-      1: ["annualHouseholdIncome"],
+      0: ["fullName", "email", "state"],
+      1: ["age", "annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit"],
-      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "totalMonthlyExpenses", "state"],
+      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "otherMonthlyExpenses"],
       4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
     };
     setErrors((prev) => {
@@ -1400,6 +1542,12 @@ export default function RoguePrepForm() {
   function goBack() {
     if (step > 0) setStep(step - 1);
   }
+
+  // Whole-number age from step 1, or null.
+  const formAge = (() => {
+    const n = Number(ageValue);
+    return !isBlankString(ageValue) && Number.isInteger(n) && n >= 18 && n <= 100 ? n : null;
+  })();
 
   // ---------------- Submit ----------------
   async function handleSubmit() {
@@ -1420,6 +1568,7 @@ export default function RoguePrepForm() {
       creditScore: parseNumOrNull(creditScore),
       creditCardDebt: parseNumOrNull(creditCardDebt),
       personalLoanDebt: parseNumOrNull(personalLoanDebt),
+      debtLastYear: parseNumOrNull(debtLastYear),
       totalCreditLimit: parseNumOrNull(totalCreditLimit),
       debtNotes: debtNotes.trim(),
       retirement401k: parseNumOrNull(retirement401k),
@@ -1429,17 +1578,22 @@ export default function RoguePrepForm() {
       savings: parseNumOrNull(savings),
       monthlyRentMortgage: parseNumOrNull(monthlyRentMortgage),
       monthlyDebtPayments: parseNumOrNull(monthlyDebtPayments),
-      totalMonthlyExpenses: parseNumOrNull(totalMonthlyExpenses),
+      // Sum of the three boxes, so the GHL note, Slack post and results page read it as before.
+      totalMonthlyExpenses,
+      otherMonthlyExpenses: parseNumOrNull(otherMonthlyExpenses),
       state: stateValue ? stateValue : null,
       bankCheckFrequency: bankCheckFrequency || null,
       financialLiteracy: parseNumOrNull(financialLiteracy),
       moneyRelationshipWord: moneyRelationshipWord.trim(),
       financialFrustration: financialFrustration.trim(),
+      financialGoal: financialGoal.trim(),
       questions: questions.trim(),
       // Setter's age (2026-10-23), for the GHL note and the results link. Null when the setter
       // call had none; the completion page then asks for it, but that answer is not sent.
-      age: prefill.age,
-      ageSource: prefill.age ? "setter" : null,
+      // The prospect's own age wins; the setter's is kept alongside when they differ.
+      age: formAge !== null ? formAge : prefill.age,
+      ageSource: formAge === null ? (prefill.age ? "setter" : null) : (prefill.age === formAge ? "setter" : "form"),
+      ageSetter: prefill.age && formAge !== null && prefill.age !== formAge ? prefill.age : null,
       prefill: {
         status: prefill.status,
         reason: prefill.reason === "pending" ? "timeout" : prefill.reason,
@@ -1469,6 +1623,11 @@ export default function RoguePrepForm() {
       if (!res.ok) throw new Error("webhook HTTP " + res.status);
       // Webhook accepted the POST. Advance.
       saveViewer(email);
+      try {
+        window.sessionStorage.removeItem(draftKey);
+      } catch {
+        /* nothing to clear */
+      }
       // Swap the booking link (name, email, token) for the results link, so a refresh or a
       // bookmark reopens this page with the snapshot.
       try {
@@ -1506,6 +1665,13 @@ export default function RoguePrepForm() {
       jumpTo("training");
     };
     const income = parseNumOrNull(annualHouseholdIncome);
+    const call = upcomingCall(callTime && callTime.at);
+    // "Jay will go through this with you on Tuesday." under each number (Patrick 2026-11-15).
+    const callDay = call ? callDayWord(call) : "";
+    const goal = goalToShow(financialGoal);
+    const callLine =
+      (closerName || "Your strategist") + " will go through this with you " +
+      (!call ? "on the call." : callDay === "today" || callDay === "tomorrow" ? callDay + "." : "on " + callDay + ".");
     const sharedId = paramResults || resultsId;
     const shareLink =
       typeof window !== "undefined" && sharedId
@@ -1516,14 +1682,42 @@ export default function RoguePrepForm() {
         <div className="done-inner">
           <div className="done-hero">
             <h1 className="done-title">
-              Form done. <span className="done-title-accent">One more thing.</span>
+              {call ? `You're set for ${callDayWord(call)}.` : "You're set."}{" "}
+              <span className="done-title-accent">One more thing.</span>
             </h1>
             <p className="done-body">
               {closerName
-                ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
+                ? `${closerName} will go through your answers before you speak.`
                 : "Your strategist will go through your answers before the call."}
             </p>
           </div>
+
+          {call ? (
+            <div className="done-call">
+              <div className="done-call-k">Your call{closerName ? ` with ${closerName}` : ""}</div>
+              <div className="done-call-when">{callWhen(call)}</div>
+              <div className="done-call-tz">Your time{callZone(call) ? ` (${callZone(call)})` : ""}</div>
+              <button
+                type="button"
+                className="done-call-btn"
+                onClick={() => downloadCallIcs(call, upcomingCall(callTime && callTime.end), closerName)}
+              >
+                Add to calendar
+              </button>
+              <div className="done-call-note">Your join link is in your confirmation email.</div>
+            </div>
+          ) : null}
+
+          {goal ? (
+            <div className="done-goal">
+              <div className="done-call-k">Your goal, in your words</div>
+              <p className="done-goal-q">&ldquo;{goal}&rdquo;</p>
+              <p className="done-goal-l">
+                {(closerName || "Your strategist") + " will start from here " +
+                  (!call ? "on the call." : callDay === "today" || callDay === "tomorrow" ? callDay + "." : "on " + callDay + ".")}
+              </p>
+            </div>
+          ) : null}
 
           {/* Order (Patrick 2026-10-25): training, share box, their own numbers, then the breakouts. */}
           <div className="done-card" id="training">
@@ -1549,7 +1743,8 @@ export default function RoguePrepForm() {
               <RetirementSnapshot
                 income={income}
                 retirement={parseNumOrNull(retirement401k)}
-                knownAge={prefill.age || savedAge}
+                knownAge={formAge || prefill.age || savedAge}
+                callLine={callLine}
               />
               <DebtClock
                 cardDebt={parseNumOrNull(creditCardDebt)}
@@ -1557,6 +1752,7 @@ export default function RoguePrepForm() {
                 monthlyPayment={parseNumOrNull(monthlyDebtPayments)}
                 housingPayment={parseNumOrNull(monthlyRentMortgage)}
                 income={income}
+                callLine={callLine}
               />
             </div>
           ) : null}
@@ -1565,7 +1761,8 @@ export default function RoguePrepForm() {
 
           <div className="done-stats">
             <div className="done-stat">
-              <div className="done-stat-num">350+</div>
+              {/* 375+: Patrick, 2026-11-15. */}
+              <div className="done-stat-num">375+</div>
               <div className="done-stat-label">Families helped since 2022</div>
             </div>
             <div className="done-stat-divider" />
@@ -1576,6 +1773,8 @@ export default function RoguePrepForm() {
                 <span className="done-tp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
                 <span className="done-tp-score">4.8</span>
               </div>
+              {/* Trustpilot roguefinance.us checked 2026-11-15: 4.8 Excellent, 39 reviews. */}
+              <div className="done-stat-label">from 39 reviews</div>
             </div>
           </div>
 
@@ -1585,7 +1784,10 @@ export default function RoguePrepForm() {
             </h2>
             <p className="done-proof-sub">Here&apos;s what people say after sitting where you&apos;re sitting now.</p>
             <div className="done-reviews">
-              {REVIEWS.slice(0, 9).map((r) => (
+              {[
+                ...PICKED_REVIEWS.map((n) => REVIEWS.find((r) => r.name === n)).filter(Boolean),
+                ...(moreReviews ? REVIEWS.filter((r) => !PICKED_REVIEWS.includes(r.name)).slice(0, 6) : []),
+              ].map((r) => (
                 <div className="done-review" key={r.name}>
                   <div className="done-review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
                   <div className="done-review-name">{r.name}</div>
@@ -1594,6 +1796,11 @@ export default function RoguePrepForm() {
                 </div>
               ))}
             </div>
+            {!moreReviews ? (
+              <button type="button" className="done-share-btn done-reviews-show" onClick={() => setMoreReviews(true)}>
+                Show 6 more reviews
+              </button>
+            ) : null}
             <a
               className="done-share-btn done-reviews-more"
               href="https://www.trustpilot.com/review/roguefinance.us"
@@ -1605,6 +1812,29 @@ export default function RoguePrepForm() {
           </div>
 
           <WinsWall />
+
+          {/* Closing card (Patrick 2026-11-15): the page ends on what gets them to the call, not the footer. */}
+          <div className="done-before">
+            <h2 className="done-before-title">Before your call</h2>
+            {call ? (
+              <button
+                type="button"
+                className="done-before-btn done-before-main"
+                onClick={() => downloadCallIcs(call, upcomingCall(callTime && callTime.end), closerName)}
+              >
+                Add {callWhen(call).replace(/ at .*/, "")} to your calendar
+              </button>
+            ) : null}
+            <button type="button" className={"done-before-btn" + (call ? "" : " done-before-main")} onClick={() => jumpTo("training")}>
+              Watch the training (about 15 minutes)
+            </button>
+            {shareLink && income > 0 ? (
+              <button type="button" className="done-before-btn" onClick={() => jumpTo("share")}>
+                Send this to your partner
+              </button>
+            ) : null}
+            <p className="done-before-tip">Be somewhere you can talk and see a screen.</p>
+          </div>
 
           {/* Legal footer, approved by Patrick 2026-10-25. Wording matches Rogue's earnings disclaimer (AWH Consulting LLC). */}
           <footer className="done-legal">
@@ -1639,7 +1869,7 @@ export default function RoguePrepForm() {
               Five minutes here means your strategist walks in already knowing your situation. The whole call goes to building your plan.
             </p>
             <p style={styles.introLine}>
-              It&apos;s confidential. Only your strategist sees it. We don&apos;t ask for account numbers, SSN, or your licence. We don&apos;t need any of that.
+              It&apos;s confidential. Only your strategist sees it. We don&apos;t ask for account numbers, SSN, or your license. We don&apos;t need any of that.
             </p>
             <p style={styles.introLine}>
               Try to fill everything in, even if it&apos;s just a rough guess. If you genuinely don&apos;t know, an estimate beats leaving it blank.
@@ -1656,34 +1886,61 @@ export default function RoguePrepForm() {
               <input
                 style={styles.input}
                 placeholder="Your full name"
+                autoComplete="name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
               />
               {errors.fullName ? (
-                <div style={styles.errText}>
-                  Best guess is fine, but please don&apos;t leave this blank.
+                <div style={styles.errText} data-err="1">
+                  Please add your name.
                 </div>
               ) : null}
             </div>
-            <div style={styles.fieldBlockLast}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Email</label>
               <input
                 style={styles.input}
                 placeholder="you@example.com"
+                autoComplete="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
               {errors.email ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   {isBlankString(email)
-                    ? "Best guess is fine, but please don't leave this blank."
+                    ? "Please add your email so we can match this to your call."
                     : "Please enter a valid email."}
+                </div>
+              ) : null}
+            </div>
+            <div style={styles.fieldBlockLast}>
+              <label style={styles.label}>State</label>
+              <div style={styles.helper}>For our records.</div>
+              <select
+                style={styles.select}
+                value={stateValue}
+                onChange={(e) => setStateValue(e.target.value)}
+              >
+                <option value="">Select your state</option>
+                {US_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <PrefillHint field="state" />
+              {errors.state ? (
+                <div style={styles.errText} data-err="1">
+                  Please select your state.
                 </div>
               ) : null}
             </div>
           </div>
 
+          {blankCount > 0 ? (
+            <div style={styles.blankNote}>
+              {blankCount === 1 ? "1 answer above still needs filling in." : `${blankCount} answers above still need filling in.`}
+            </div>
+          ) : null}
           <div style={styles.nav}>
             <button type="button" style={styles.btnPrimary} onClick={goNext}>
               Start
@@ -1698,8 +1955,8 @@ export default function RoguePrepForm() {
   const STEPS = [
     {
       label: "Step 1 of 4",
-      title: "Income",
-      desc: "What’s coming in each year, before tax.",
+      title: "About you",
+      desc: "Your age and what’s coming in each year, before tax.",
     },
     {
       label: "Step 2 of 4",
@@ -1708,7 +1965,7 @@ export default function RoguePrepForm() {
     },
     {
       label: "Step 3 of 4",
-      title: "Assets & monthly money",
+      title: "Savings, assets & monthly money",
       desc: "What you have, and what’s going out each month.",
     },
     {
@@ -1745,7 +2002,30 @@ export default function RoguePrepForm() {
 
         {step === 1 && (
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Gross annual household income</div>
+            <div style={styles.cardLabel}>About you</div>
+            <div style={styles.fieldBlock}>
+              <label style={styles.label}>Your age</label>
+              <div style={styles.helper}>Used for the retirement check on your results.</div>
+              <input
+                style={styles.input}
+                placeholder="e.g. 42"
+                type="number"
+                onWheel={(e) => e.currentTarget.blur()}
+                inputMode="numeric"
+                value={ageValue}
+                onChange={(e) => setAgeValue(e.target.value)}
+              />
+              {prefill.status === "filled" && prefill.age && String(prefill.age) === String(ageValue).trim() ? (
+                <div style={styles.prefillHint}>
+                  From {prefill.setter ? `your call with ${prefill.setter}` : "your call with our team"}. Change it if it&apos;s off.
+                </div>
+              ) : null}
+              {errors.age ? (
+                <div style={styles.errText} data-err="1">
+                  {errors.age === "range" ? "Please enter your age in years, for example 42." : "Please add your age."}
+                </div>
+              ) : null}
+            </div>
             <div style={styles.fieldBlockLast}>
               <label style={styles.label}>Annual income, before tax ($)</label>
               <div style={styles.helper}>
@@ -1762,8 +2042,13 @@ export default function RoguePrepForm() {
               />
               <PrefillHint field="annualHouseholdIncome" />
               {errors.annualHouseholdIncome ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
+                </div>
+              ) : null}
+              {parseNumOrNull(annualHouseholdIncome) !== null ? (
+                <div style={styles.calcReadout}>
+                  That&apos;s {fmtMoney(parseNumOrNull(annualHouseholdIncome))} a year.
                 </div>
               ) : null}
             </div>
@@ -1776,6 +2061,9 @@ export default function RoguePrepForm() {
 
             <div style={styles.fieldBlock}>
               <label style={styles.label}>Credit score</label>
+              <div style={styles.helper}>
+                Any bureau works. Not sure? Just give your best guess.
+              </div>
               <input
                 style={styles.input}
                 placeholder="e.g. 712"
@@ -1786,11 +2074,8 @@ export default function RoguePrepForm() {
                 onChange={(e) => setCreditScore(e.target.value)}
               />
               <PrefillHint field="creditScore" />
-              <div style={styles.helper}>
-                Any bureau works. Not sure? Just give your best guess.
-              </div>
               {errors.creditScore ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1811,30 +2096,7 @@ export default function RoguePrepForm() {
               />
               <PrefillHint field="creditCardDebt" />
               {errors.creditCardDebt ? (
-                <div style={styles.errText}>
-                  Best guess is fine, but please don&apos;t leave this blank.
-                </div>
-              ) : null}
-            </div>
-
-            <div style={styles.fieldBlock}>
-              <label style={styles.label}>
-                Personal loan debt ($)
-              </label>
-              <div style={styles.helper}>
-                Personal loans, BNPL, anything that isn&apos;t a credit card or mortgage. No personal loans? Put 0.
-              </div>
-              <input
-                style={styles.input}
-                type="number"
-                onWheel={(e) => e.currentTarget.blur()}
-                inputMode="decimal"
-                value={personalLoanDebt}
-                onChange={(e) => setPersonalLoanDebt(e.target.value)}
-              />
-              <PrefillHint field="personalLoanDebt" />
-              {errors.personalLoanDebt ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1855,7 +2117,7 @@ export default function RoguePrepForm() {
                 onChange={(e) => setTotalCreditLimit(e.target.value)}
               />
               {errors.totalCreditLimit ? (
-                <div style={styles.errText}>
+                <div style={styles.errText} data-err="1">
                   Best guess is fine, but please don&apos;t leave this blank.
                 </div>
               ) : null}
@@ -1892,6 +2154,57 @@ export default function RoguePrepForm() {
               })()}
             </div>
 
+            <div style={styles.fieldBlock}>
+              <label style={styles.label}>
+                Personal loan debt ($)
+              </label>
+              <div style={styles.helper}>
+                Personal loans and BNPL. Car or student loans go in the notes box below. None? Put 0.
+              </div>
+              <input
+                style={styles.input}
+                type="number"
+                onWheel={(e) => e.currentTarget.blur()}
+                inputMode="decimal"
+                value={personalLoanDebt}
+                onChange={(e) => setPersonalLoanDebt(e.target.value)}
+              />
+              <PrefillHint field="personalLoanDebt" />
+              {errors.personalLoanDebt ? (
+                <div style={styles.errText} data-err="1">
+                  Best guess is fine, but please don&apos;t leave this blank.
+                </div>
+              ) : null}
+            </div>
+
+            <div style={styles.fieldBlock}>
+              {(() => {
+                const ccd = parseNumOrNull(creditCardDebt);
+                const pld = parseNumOrNull(personalLoanDebt);
+                if (ccd === null || pld === null) return null;
+                return (
+                  <div style={{ ...styles.calcReadout, marginBottom: 12 }}>
+                    Right now you owe roughly {fmtMoney(ccd + pld)} across credit cards and personal loans.
+                  </div>
+                );
+              })()}
+              <label style={styles.label}>
+                Roughly what did you owe on cards and personal loans 12 months ago? ($)
+                <span style={styles.optionalTag}>(optional)</span>
+              </label>
+              <div style={styles.helper}>
+                A best guess is fine. Had none? Put 0. Not sure? Leave it blank.
+              </div>
+              <input
+                style={styles.input}
+                type="number"
+                onWheel={(e) => e.currentTarget.blur()}
+                inputMode="decimal"
+                value={debtLastYear}
+                onChange={(e) => setDebtLastYear(e.target.value)}
+              />
+            </div>
+
             <div style={styles.fieldBlockLast}>
               <label style={styles.label}>
                 Anything else about your debt?<span style={styles.optionalTag}>(optional)</span>
@@ -1913,7 +2226,28 @@ export default function RoguePrepForm() {
         {step === 3 && (
           <>
             <div style={styles.card}>
-              <div style={styles.cardLabel}>Assets</div>
+              <div style={styles.cardLabel}>Savings & assets</div>
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>Savings ($)</label>
+                <div style={styles.helper}>
+                  Cash sitting in checking, savings, or money market accounts. Rough number is fine. If you don&apos;t have any, just put 0.
+                </div>
+                <input
+                  style={styles.input}
+                  type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
+                  inputMode="decimal"
+                  value={savings}
+                  onChange={(e) => setSavings(e.target.value)}
+                />
+                <PrefillHint field="savings" />
+                {errors.savings ? (
+                  <div style={styles.errText} data-err="1">
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
+              </div>
 
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>401k / retirement ($)</label>
@@ -1930,7 +2264,7 @@ export default function RoguePrepForm() {
                 />
                 <PrefillHint field="retirement401k" />
                 {errors.retirement401k ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -1951,7 +2285,7 @@ export default function RoguePrepForm() {
                 />
                 <PrefillHint field="homeEquity" />
                 {errors.homeEquity ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -1960,7 +2294,7 @@ export default function RoguePrepForm() {
               <div style={styles.fieldBlockLast}>
                 <label style={styles.label}>Other assets ($)</label>
                 <div style={styles.helper}>
-                  Anything else: investments, savings bonds, a HELOC you could draw on. Enter 0 if none.
+                  Stocks, crypto, a brokerage account, savings bonds, anything else you own that&apos;s worth money. Don&apos;t count your home, it&apos;s covered above. Enter 0 if none.
                 </div>
                 <input
                   style={styles.input}
@@ -1971,7 +2305,7 @@ export default function RoguePrepForm() {
                   onChange={(e) => setOtherAssetsValue(e.target.value)}
                 />
                 {errors.otherAssetsValue ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -1981,7 +2315,7 @@ export default function RoguePrepForm() {
                   </label>
                   <input
                     style={styles.input}
-                    placeholder="e.g. brokerage account, HELOC, savings bonds"
+                    placeholder="e.g. stocks, crypto, savings bonds"
                     value={otherAssetsNote}
                     onChange={(e) => setOtherAssetsNote(e.target.value)}
                   />
@@ -1990,33 +2324,12 @@ export default function RoguePrepForm() {
             </div>
 
             <div style={styles.card}>
-              <div style={styles.cardLabel}>Savings & monthly money</div>
-
-              <div style={styles.fieldBlock}>
-                <label style={styles.label}>Savings ($)</label>
-                <div style={styles.helper}>
-                  Cash sitting in checking, savings, or money market accounts. Rough number is fine. If you don&apos;t have any, just put 0.
-                </div>
-                <input
-                  style={styles.input}
-                  type="number"
-                  onWheel={(e) => e.currentTarget.blur()}
-                  inputMode="decimal"
-                  value={savings}
-                  onChange={(e) => setSavings(e.target.value)}
-                />
-                <PrefillHint field="savings" />
-                {errors.savings ? (
-                  <div style={styles.errText}>
-                    Best guess is fine, but please don&apos;t leave this blank.
-                  </div>
-                ) : null}
-              </div>
+              <div style={styles.cardLabel}>Monthly money</div>
 
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>Monthly rent / mortgage ($)</label>
                 <div style={styles.helper}>
-                  If you own outright or it&apos;s covered, put 0.
+                  Your housing payment. If you own outright or it&apos;s covered, put 0.
                 </div>
                 <input
                   style={styles.input}
@@ -2027,7 +2340,7 @@ export default function RoguePrepForm() {
                   onChange={(e) => setMonthlyRentMortgage(e.target.value)}
                 />
                 {errors.monthlyRentMortgage ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
@@ -2036,7 +2349,7 @@ export default function RoguePrepForm() {
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>Monthly debt payments ($)</label>
                 <div style={styles.helper}>
-                  If you&apos;re not paying anything toward debt right now, put 0.
+                  Cards, loans, car, student loans: the total you pay each month across all of them. If you&apos;re not paying anything toward debt right now, put 0.
                 </div>
                 <input
                   style={styles.input}
@@ -2047,52 +2360,37 @@ export default function RoguePrepForm() {
                   onChange={(e) => setMonthlyDebtPayments(e.target.value)}
                 />
                 {errors.monthlyDebtPayments ? (
-                  <div style={styles.errText}>
-                    Best guess is fine, but please don&apos;t leave this blank.
-                  </div>
-                ) : null}
-              </div>
-
-              <div style={styles.fieldBlock}>
-                <label style={styles.label}>Total monthly expenses ($)</label>
-                <div style={styles.helper}>
-                  Everything you spend in a month: bills, groceries, subscriptions, all of it. Rough number is fine.
-                </div>
-                <input
-                  style={styles.input}
-                  type="number"
-                  onWheel={(e) => e.currentTarget.blur()}
-                  inputMode="decimal"
-                  value={totalMonthlyExpenses}
-                  onChange={(e) => setTotalMonthlyExpenses(e.target.value)}
-                />
-                {errors.totalMonthlyExpenses ? (
-                  <div style={styles.errText}>
+                  <div style={styles.errText} data-err="1">
                     Best guess is fine, but please don&apos;t leave this blank.
                   </div>
                 ) : null}
               </div>
 
               <div style={styles.fieldBlockLast}>
-                <label style={styles.label}>State</label>
-                <div style={styles.helper}>For our records.</div>
-                <select
-                  style={styles.select}
-                  value={stateValue}
-                  onChange={(e) => setStateValue(e.target.value)}
-                >
-                  <option value="">Select your state</option>
-                  {US_STATES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-                <PrefillHint field="state" />
-                {errors.state ? (
-                  <div style={styles.errText}>
-                    Please select your state.
+                <label style={styles.label}>Everything else, per month ($)</label>
+                <div style={styles.helper}>
+                  Not rent or debt payments. Groceries, gas, utilities, insurance, phone, subscriptions, childcare, eating out. Rough number is fine.
+                </div>
+                <input
+                  style={styles.input}
+                  type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
+                  inputMode="decimal"
+                  value={otherMonthlyExpenses}
+                  onChange={(e) => setOtherMonthlyExpenses(e.target.value)}
+                />
+                {errors.otherMonthlyExpenses ? (
+                  <div style={styles.errText} data-err="1">
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
+                {totalMonthlyExpenses !== null ? (
+                  <div style={styles.calcReadout}>
+                    That&apos;s about {fmtMoney(totalMonthlyExpenses)} a month all in: housing, debt payments and everything else.
                   </div>
                 ) : null}
               </div>
+
             </div>
           </>
         )}
@@ -2115,7 +2413,7 @@ export default function RoguePrepForm() {
                   ))}
                 </select>
                 {errors.bankCheckFrequency ? (
-                  <div style={styles.errText}>Please pick one.</div>
+                  <div style={styles.errText} data-err="1">Please pick one.</div>
                 ) : null}
               </div>
 
@@ -2134,7 +2432,7 @@ export default function RoguePrepForm() {
                   ))}
                 </select>
                 {errors.financialLiteracy ? (
-                  <div style={styles.errText}>Please pick a number.</div>
+                  <div style={styles.errText} data-err="1">Please pick a number.</div>
                 ) : null}
               </div>
 
@@ -2149,11 +2447,11 @@ export default function RoguePrepForm() {
                   onChange={(e) => setMoneyRelationshipWord(e.target.value)}
                 />
                 {errors.moneyRelationshipWord ? (
-                  <div style={styles.errText}>One word is all it takes.</div>
+                  <div style={styles.errText} data-err="1">One word is all it takes.</div>
                 ) : null}
               </div>
 
-              <div style={styles.fieldBlockLast}>
+              <div style={styles.fieldBlock}>
                 <label style={styles.label}>
                   What feels most frustrating about your finances right now?
                   <span style={styles.optionalTag}>(optional)</span>
@@ -2163,6 +2461,19 @@ export default function RoguePrepForm() {
                   placeholder="Type here…"
                   value={financialFrustration}
                   onChange={(e) => setFinancialFrustration(e.target.value)}
+                />
+              </div>
+
+              <div style={styles.fieldBlockLast}>
+                <label style={styles.label}>
+                  Where do you want your finances to be 3 years from now?
+                  <span style={styles.optionalTag}>(optional)</span>
+                </label>
+                <input
+                  style={styles.input}
+                  placeholder="Type here…"
+                  value={financialGoal}
+                  onChange={(e) => setFinancialGoal(e.target.value)}
                 />
               </div>
             </div>
@@ -2189,6 +2500,11 @@ export default function RoguePrepForm() {
           </>
         )}
 
+        {blankCount > 0 ? (
+          <div style={styles.blankNote}>
+            {blankCount === 1 ? "1 answer above still needs filling in." : `${blankCount} answers above still need filling in.`}
+          </div>
+        ) : null}
         <div style={styles.nav}>
           <button type="button" style={styles.btnSecondary} onClick={goBack}>Back</button>
           <button
