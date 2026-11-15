@@ -1153,6 +1153,8 @@ export default function RoguePrepForm() {
   const [financialLiteracy, setFinancialLiteracy] = useState("");
   const [moneyRelationshipWord, setMoneyRelationshipWord] = useState("");
   const [financialFrustration, setFinancialFrustration] = useState("");
+  // Long-term goal (2026-11-15): optional, own words, no examples (same reason as frustration).
+  const [financialGoal, setFinancialGoal] = useState("");
   const [questions, setQuestions] = useState("");
   const [stateValue, setStateValue] = useState("");
 
@@ -1390,7 +1392,7 @@ export default function RoguePrepForm() {
       if (isBlankString(bankCheckFrequency)) blanks.bankCheckFrequency = true;
       if (isBlankString(financialLiteracy)) blanks.financialLiteracy = true;
       if (isBlankString(moneyRelationshipWord)) blanks.moneyRelationshipWord = true;
-      // financialFrustration and questions stay OPTIONAL
+      // financialFrustration, financialGoal and questions stay OPTIONAL
     }
 
     if (Object.keys(blanks).length > 0) {
@@ -1461,6 +1463,7 @@ export default function RoguePrepForm() {
       financialLiteracy: parseNumOrNull(financialLiteracy),
       moneyRelationshipWord: moneyRelationshipWord.trim(),
       financialFrustration: financialFrustration.trim(),
+      financialGoal: financialGoal.trim(),
       questions: questions.trim(),
       // Setter's age (2026-10-23), for the GHL note and the results link. Null when the setter
       // call had none; the completion page then asks for it, but that answer is not sent.
@@ -2224,7 +2227,7 @@ export default function RoguePrepForm() {
                 ) : null}
               </div>
 
-              <div style={styles.fieldBlockLast}>
+              <div style={styles.fieldBlock}>
                 <label style={styles.label}>
                   What feels most frustrating about your finances right now?
                   <span style={styles.optionalTag}>(optional)</span>
@@ -2234,6 +2237,19 @@ export default function RoguePrepForm() {
                   placeholder="Type here…"
                   value={financialFrustration}
                   onChange={(e) => setFinancialFrustration(e.target.value)}
+                />
+              </div>
+
+              <div style={styles.fieldBlockLast}>
+                <label style={styles.label}>
+                  Where do you want your finances to be 3 years from now?
+                  <span style={styles.optionalTag}>(optional)</span>
+                </label>
+                <input
+                  style={styles.input}
+                  placeholder="Type here…"
+                  value={financialGoal}
+                  onChange={(e) => setFinancialGoal(e.target.value)}
                 />
               </div>
             </div>
