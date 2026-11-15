@@ -1356,6 +1356,7 @@ export default function RoguePrepForm() {
     if (step === 0) {
       if (isBlankString(fullName)) blanks.fullName = true;
       if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
+      if (isBlankString(stateValue)) blanks.state = true;
     } else if (step === 1) {
       if (isBlankString(annualHouseholdIncome)) blanks.annualHouseholdIncome = true;
     } else if (step === 2) {
@@ -1371,7 +1372,6 @@ export default function RoguePrepForm() {
       if (isBlankString(monthlyRentMortgage)) blanks.monthlyRentMortgage = true;
       if (isBlankString(monthlyDebtPayments)) blanks.monthlyDebtPayments = true;
       if (isBlankString(otherMonthlyExpenses)) blanks.otherMonthlyExpenses = true;
-      if (isBlankString(stateValue)) blanks.state = true;
       // otherAssetsNote stays OPTIONAL
     } else if (step === 4) {
       if (isBlankString(bankCheckFrequency)) blanks.bankCheckFrequency = true;
@@ -1388,10 +1388,10 @@ export default function RoguePrepForm() {
     // Step gate passed. Clear any stale errors for THIS step's required keys,
     // then advance (or submit on step 4).
     const STEP_KEYS_FOR_CLEAR = {
-      0: ["fullName", "email"],
+      0: ["fullName", "email", "state"],
       1: ["annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit"],
-      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "otherMonthlyExpenses", "state"],
+      3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "otherMonthlyExpenses"],
       4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
     };
     setErrors((prev) => {
@@ -1673,7 +1673,7 @@ export default function RoguePrepForm() {
                 </div>
               ) : null}
             </div>
-            <div style={styles.fieldBlockLast}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Email</label>
               <input
                 style={styles.input}
@@ -1687,6 +1687,26 @@ export default function RoguePrepForm() {
                   {isBlankString(email)
                     ? "Best guess is fine, but please don't leave this blank."
                     : "Please enter a valid email."}
+                </div>
+              ) : null}
+            </div>
+            <div style={styles.fieldBlockLast}>
+              <label style={styles.label}>State</label>
+              <div style={styles.helper}>For our records.</div>
+              <select
+                style={styles.select}
+                value={stateValue}
+                onChange={(e) => setStateValue(e.target.value)}
+              >
+                <option value="">Select your state</option>
+                {US_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <PrefillHint field="state" />
+              {errors.state ? (
+                <div style={styles.errText}>
+                  Please select your state.
                 </div>
               ) : null}
             </div>
@@ -1921,7 +1941,28 @@ export default function RoguePrepForm() {
         {step === 3 && (
           <>
             <div style={styles.card}>
-              <div style={styles.cardLabel}>Assets</div>
+              <div style={styles.cardLabel}>Savings & assets</div>
+
+              <div style={styles.fieldBlock}>
+                <label style={styles.label}>Savings ($)</label>
+                <div style={styles.helper}>
+                  Cash sitting in checking, savings, or money market accounts. Rough number is fine. If you don&apos;t have any, just put 0.
+                </div>
+                <input
+                  style={styles.input}
+                  type="number"
+                  onWheel={(e) => e.currentTarget.blur()}
+                  inputMode="decimal"
+                  value={savings}
+                  onChange={(e) => setSavings(e.target.value)}
+                />
+                <PrefillHint field="savings" />
+                {errors.savings ? (
+                  <div style={styles.errText}>
+                    Best guess is fine, but please don&apos;t leave this blank.
+                  </div>
+                ) : null}
+              </div>
 
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>401k / retirement ($)</label>
@@ -1998,28 +2039,7 @@ export default function RoguePrepForm() {
             </div>
 
             <div style={styles.card}>
-              <div style={styles.cardLabel}>Savings & monthly money</div>
-
-              <div style={styles.fieldBlock}>
-                <label style={styles.label}>Savings ($)</label>
-                <div style={styles.helper}>
-                  Cash sitting in checking, savings, or money market accounts. Rough number is fine. If you don&apos;t have any, just put 0.
-                </div>
-                <input
-                  style={styles.input}
-                  type="number"
-                  onWheel={(e) => e.currentTarget.blur()}
-                  inputMode="decimal"
-                  value={savings}
-                  onChange={(e) => setSavings(e.target.value)}
-                />
-                <PrefillHint field="savings" />
-                {errors.savings ? (
-                  <div style={styles.errText}>
-                    Best guess is fine, but please don&apos;t leave this blank.
-                  </div>
-                ) : null}
-              </div>
+              <div style={styles.cardLabel}>Monthly money</div>
 
               <div style={styles.fieldBlock}>
                 <label style={styles.label}>Monthly rent / mortgage (your housing payment, $)</label>
@@ -2061,7 +2081,7 @@ export default function RoguePrepForm() {
                 ) : null}
               </div>
 
-              <div style={styles.fieldBlock}>
+              <div style={styles.fieldBlockLast}>
                 <label style={styles.label}>Everything else, per month (food, gas, bills, insurance, $)</label>
                 <div style={styles.helper}>
                   Not rent or debt payments. Groceries, gas, utilities, insurance, phone, subscriptions, childcare, eating out. Rough number is fine.
@@ -2086,26 +2106,6 @@ export default function RoguePrepForm() {
                 ) : null}
               </div>
 
-              <div style={styles.fieldBlockLast}>
-                <label style={styles.label}>State</label>
-                <div style={styles.helper}>For our records.</div>
-                <select
-                  style={styles.select}
-                  value={stateValue}
-                  onChange={(e) => setStateValue(e.target.value)}
-                >
-                  <option value="">Select your state</option>
-                  {US_STATES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-                <PrefillHint field="state" />
-                {errors.state ? (
-                  <div style={styles.errText}>
-                    Please select your state.
-                  </div>
-                ) : null}
-              </div>
             </div>
           </>
         )}
