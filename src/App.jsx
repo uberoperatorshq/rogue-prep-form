@@ -80,6 +80,8 @@ const BREAKOUT_VIDEOS = [
 // Client wins wall: Slack screenshots from the client channels, names blurred.
 // Picked 2026-10-19 from wins-web.zip (85 files, 34 leaked a name or face and
 // were dropped). Files in public/prep-assets/wins so the /prep proxy serves them.
+// 2026-11-15 (Patrick): win-s74 dropped (too small to read on a phone); win-s90b = red name bar
+// re-blurred grey like the rest; win-s78b = cropped above Slack's message box. Originals kept.
 // Added at the bottom 2026-10-25 (Patrick). win-s88 (credit score up 75 points) held back for a
 // compliance call, same as the credit-score reviews.
 const WINS_TITLE = "From our client channel";
@@ -90,9 +92,8 @@ const WINS = [
   { file: "win-s92.webp", w: 646, h: 398, alt: "Client couple: just over $8,000 left across our accounts after the month's major bills." },
   { file: "win-s58.webp", w: 900, h: 395, alt: "Client: I don't even remember when payday is now, and I spend on half the stuff I used to." },
   { file: "win-s73.webp", w: 900, h: 194, alt: "Client: got everything automated and organized, so much relief." },
-  { file: "win-s74.webp", w: 900, h: 323, alt: "Client: started in debt with negative cash flow, now positive cash flow and three quarters of a month in savings." },
-  { file: "win-s90.webp", w: 900, h: 577, alt: "Client: husband's $900 bonus went automatically into savings." },
-  { file: "win-s78.webp", w: 900, h: 415, alt: "Client: slept well for the first time in so long after paying everything off or down." },
+  { file: "win-s90b.webp", w: 900, h: 540, alt: "Client: husband's $900 bonus went automatically into savings." },
+  { file: "win-s78b.webp", w: 900, h: 150, alt: "Client: slept well for the first time in so long after paying everything off or down." },
 ];
 
 // Trustpilot reviews, scanned 2026-10-25 (39 live, all 5 stars), newest first; the page shows the newest 9 and links to
