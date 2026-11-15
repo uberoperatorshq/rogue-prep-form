@@ -289,6 +289,9 @@ const RESULTS_URL = import.meta.env.VITE_RESULTS_URL || "https://uberops.app.n8n
 // Step tracking (2026-11-15): one small ping each time someone reaches a step, so we can see
 // where people stop and whether stopping goes with a no-show. No answers or money numbers are
 // sent, only the step, the page-load id and the booking token (n8n reads the contact from it).
+// Demo previews only (never set in production): a fixed pre-fill reply so a reviewer sees the
+// setter numbers, age and call card without any live lookup.
+const DEMO_PREFILL = import.meta.env.VITE_DEMO_PREFILL || "";
 const TRACK_URL = import.meta.env.VITE_TRACK_URL || "https://uberops.app.n8n.cloud/webhook/prep-track";
 const STEP_EVENTS = ["opened", "income", "credit_debt", "assets_monthly", "you_and_money", "submitted"];
 
@@ -1313,14 +1316,18 @@ export default function RoguePrepForm() {
       if (v === undefined || v === null) return;
       setter((cur) => (isBlankString(cur) ? String(v) : cur));
     };
-    fetch(PREFILL_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ t: paramToken }),
-      signal: controller.signal,
-    })
-      .then((r) => r.json())
+    (DEMO_PREFILL
+      ? Promise.resolve(JSON.parse(DEMO_PREFILL))
+      : fetch(PREFILL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ t: paramToken }),
+          signal: controller.signal,
+        }).then((r) => r.json())
+    )
       .then((j) => {
+        // The call time comes back on every valid-token reply, even with no setter numbers.
+        if (j && j.callAt) setCallTime({ at: String(j.callAt), end: j.callEnd ? String(j.callEnd) : "" });
         if (!j || !j.ok || !j.values) {
           setPrefill((p) => ({ ...p, reason: (j && j.reason) || "error" }));
           return;
@@ -1343,7 +1350,6 @@ export default function RoguePrepForm() {
           age: Number.isInteger(j.age) ? j.age : null,
         });
         if (Number.isInteger(j.age)) fill(setAgeValue, j.age);
-        if (j.callAt) setCallTime({ at: String(j.callAt), end: j.callEnd ? String(j.callEnd) : "" });
       })
       .catch((err) => {
         setPrefill((p) => ({ ...p, reason: err && err.name === "AbortError" ? "timeout" : "error" }));
