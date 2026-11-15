@@ -2022,7 +2022,7 @@ export default function RoguePrepForm() {
               </div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>Monthly rent / mortgage ($)</label>
+                <label style={styles.label}>Monthly rent / mortgage (your housing payment, $)</label>
                 <div style={styles.helper}>
                   If you own outright or it&apos;s covered, put 0.
                 </div>
@@ -2042,9 +2042,9 @@ export default function RoguePrepForm() {
               </div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>Monthly debt payments ($)</label>
+                <label style={styles.label}>Monthly debt payments (cards, loans, car, student loans, $)</label>
                 <div style={styles.helper}>
-                  If you&apos;re not paying anything toward debt right now, put 0.
+                  The total you pay each month across all of them. If you&apos;re not paying anything toward debt right now, put 0.
                 </div>
                 <input
                   style={styles.input}
@@ -2062,7 +2062,7 @@ export default function RoguePrepForm() {
               </div>
 
               <div style={styles.fieldBlock}>
-                <label style={styles.label}>Everything else, per month ($)</label>
+                <label style={styles.label}>Everything else, per month (food, gas, bills, insurance, $)</label>
                 <div style={styles.helper}>
                   Not rent or debt payments. Groceries, gas, utilities, insurance, phone, subscriptions, childcare, eating out. Rough number is fine.
                 </div>
