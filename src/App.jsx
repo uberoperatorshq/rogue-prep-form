@@ -1736,7 +1736,7 @@ export default function RoguePrepForm() {
     },
     {
       label: "Step 3 of 4",
-      title: "Assets & monthly money",
+      title: "Savings, assets & monthly money",
       desc: "What you have, and what’s going out each month.",
     },
     {
