@@ -8,10 +8,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // the completion screen. Leave empty to render the styled placeholder card
 // (which always shows the CTA below). Swappable without any other code change.
 // Andy plays at 1.5x with captions on by default (Patrick 2026-10-04); viewers can still change both in the player.
-const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?playbackRate=1.5&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true";
+const COMPLETION_VIDEO_URL = "https://fast.wistia.net/embed/iframe/fjixekaj02?playbackRate=1.5&controlsVisibleOnLoad=false&plugin%5Bcaptions-v1%5D%5BonByDefault%5D=true";
 const COMPLETION_VIDEO_TITLE = "Watch the pre-call training";
-const COMPLETION_VIDEO_BODY =
-  "Andy recorded this for people who have a strategy session booked. Watch it start to finish so the call can start from your numbers.";
+// "About 15 minutes": 23:49 at the player's default 1.5x (Patrick 2026-11-15).
+const COMPLETION_VIDEO_BODY = "About 15 minutes. Watch it before your call so the call can start from your numbers.";
 // Chapters (2026-10-25, Oct 20 revamp plan): engagement on the 23:49 cut is 57%, so people can
 // jump to the part they care about. Seconds checked against the Wistia captions; a tap reloads
 // the player at that second.
@@ -756,6 +756,57 @@ function VideoCard({ viewer, startAt }) {
   );
 }
 
+// Call time (2026-11-15): the pre-fill returns the closer call's start (and end) from GHL.
+// Shown in the prospect's own time zone. A call more than an hour gone is treated as no call.
+function upcomingCall(callAt) {
+  const t = Date.parse(callAt || "");
+  if (!Number.isFinite(t) || t < Date.now() - 3600 * 1000) return null;
+  return new Date(t);
+}
+function callDayWord(d) {
+  const start = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((start(d) - start(new Date())) / 864e5);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days > 1 && days < 7) return d.toLocaleDateString("en-US", { weekday: "long" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+function callWhen(d) {
+  const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return day + " at " + time;
+}
+function callZone(d) {
+  try {
+    const part = new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(d).find((x) => x.type === "timeZoneName");
+    return part ? part.value : "";
+  } catch {
+    return "";
+  }
+}
+// One-tap calendar file; iPhone opens it in Calendar, Android hands it to the calendar app.
+function downloadCallIcs(start, end, closerName) {
+  const z = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const stop = end && end > start ? end : new Date(start.getTime() + 60 * 60 * 1000);
+  const who = closerName ? " with " + closerName : "";
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Rogue Finance//Prep//EN", "BEGIN:VEVENT",
+    "UID:" + z(start) + "-prep@roguefinance.us", "DTSTAMP:" + z(new Date()),
+    "DTSTART:" + z(start), "DTEND:" + z(stop),
+    "SUMMARY:Rogue Finance call" + who,
+    "DESCRIPTION:Your join link is in your confirmation email.",
+    "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "rogue-finance-call.ics";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function fmtClock(sec) {
   return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
 }
@@ -1210,11 +1261,11 @@ export default function RoguePrepForm() {
   useEffect(() => {
     if (step === 5) return;
     try {
-      window.sessionStorage.setItem(draftKey, JSON.stringify({ fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue }));
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ callTime, fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue }));
     } catch {
       /* storage blocked or full: the form still works, it just won't survive a reload */
     }
-  }, [draftKey, step, fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue]);
+  }, [draftKey, step, callTime, fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue]);
 
   // ---------------- Pre-fill from the setter call ----------------
   // Only fills fields the prospect has not typed in. The snapshot rides along
@@ -1229,6 +1280,8 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
+  // Closer call time from the pre-fill or the results link: { at, end } ISO strings.
+  const [callTime, setCallTime] = useState(() => (draft.callTime && typeof draft.callTime.at === "string" ? draft.callTime : null));
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
@@ -1271,6 +1324,7 @@ export default function RoguePrepForm() {
           age: Number.isInteger(j.age) ? j.age : null,
         });
         if (Number.isInteger(j.age)) fill(setAgeValue, j.age);
+        if (j.callAt) setCallTime({ at: String(j.callAt), end: j.callEnd ? String(j.callEnd) : "" });
       })
       .catch((err) => {
         setPrefill((p) => ({ ...p, reason: err && err.name === "AbortError" ? "timeout" : "error" }));
@@ -1308,6 +1362,7 @@ export default function RoguePrepForm() {
         if (j.monthlyDebtPayments != null) setMonthlyDebtPayments(String(j.monthlyDebtPayments));
         if (j.monthlyRentMortgage != null) setMonthlyRentMortgage(String(j.monthlyRentMortgage));
         if (Number.isInteger(j.age)) setSavedAge(j.age);
+        if (j.callAt) setCallTime({ at: String(j.callAt), end: j.callEnd ? String(j.callEnd) : "" });
         if (j.closer && !paramCloser) setCloserName(String(j.closer));
         if (looksLikeEmail(j.email)) setEmail(j.email.trim());
       })
@@ -1580,6 +1635,7 @@ export default function RoguePrepForm() {
       jumpTo("training");
     };
     const income = parseNumOrNull(annualHouseholdIncome);
+    const call = upcomingCall(callTime && callTime.at);
     const sharedId = paramResults || resultsId;
     const shareLink =
       typeof window !== "undefined" && sharedId
@@ -1590,14 +1646,31 @@ export default function RoguePrepForm() {
         <div className="done-inner">
           <div className="done-hero">
             <h1 className="done-title">
-              Form done. <span className="done-title-accent">One more thing.</span>
+              {call ? `You're set for ${callDayWord(call)}.` : "You're set."}{" "}
+              <span className="done-title-accent">One more thing.</span>
             </h1>
             <p className="done-body">
               {closerName
-                ? `${closerName}, your strategist for this call, will go through your answers before you speak.`
+                ? `${closerName} will go through your answers before you speak.`
                 : "Your strategist will go through your answers before the call."}
             </p>
           </div>
+
+          {call ? (
+            <div className="done-call">
+              <div className="done-call-k">Your call{closerName ? ` with ${closerName}` : ""}</div>
+              <div className="done-call-when">{callWhen(call)}</div>
+              <div className="done-call-tz">Your time{callZone(call) ? ` (${callZone(call)})` : ""}</div>
+              <button
+                type="button"
+                className="done-call-btn"
+                onClick={() => downloadCallIcs(call, upcomingCall(callTime && callTime.end), closerName)}
+              >
+                Add to calendar
+              </button>
+              <div className="done-call-note">Your join link is in your confirmation email.</div>
+            </div>
+          ) : null}
 
           {/* Order (Patrick 2026-10-25): training, share box, their own numbers, then the breakouts. */}
           <div className="done-card" id="training">

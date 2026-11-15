@@ -195,3 +195,11 @@ input[type="number"] {
   .done-stats { gap: 22px; }
   .done-stat-divider { display: none; }
 }
+
+/* Call time card (2026-11-15): under the hero, only when the pre-fill knows the closer call. */
+.done-call { background: #161616; border: 1px solid #2a2a2a; border-radius: 12px; padding: 16px 18px; margin: 0 auto 24px; max-width: 520px; text-align: left; }
+.done-call-k { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #888888; }
+.done-call-when { font-size: 20px; font-weight: 600; color: #ffffff; margin-top: 4px; }
+.done-call-tz { font-size: 14px; color: #9a9a9a; margin-top: 2px; }
+.done-call-btn { margin-top: 12px; width: 100%; min-height: 46px; border: 0; border-radius: 8px; background: #c0392b; color: #ffffff; font-size: 16px; font-weight: 600; cursor: pointer; }
+.done-call-note { font-size: 13px; color: #9a9a9a; margin-top: 10px; }
