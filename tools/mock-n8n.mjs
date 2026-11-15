@@ -2,12 +2,14 @@
 // Slack or Supabase. Run: node tools/mock-n8n.mjs, then start the form with
 //   VITE_SUBMIT_URL=http://localhost:8787/prep-form \
 //   VITE_RESULTS_URL=http://localhost:8787/prep-results \
-//   VITE_PREFILL_URL=http://localhost:8787/prep-prefill npm run dev
+//   VITE_PREFILL_URL=http://localhost:8787/prep-prefill \
+//   VITE_TRACK_URL=http://localhost:8787/prep-track npm run dev
 // Submits are kept in memory and logged; prep-results returns them by id, like n8n will.
 import http from "node:http";
 
 const PORT = Number(process.env.PORT || 8787);
 const saved = new Map();
+const steps = [];
 
 function send(res, code, body) {
   res.writeHead(code, {
@@ -21,6 +23,7 @@ function send(res, code, body) {
 http
   .createServer((req, res) => {
     if (req.method === "OPTIONS") return send(res, 204, {});
+    if (req.method === "GET" && req.url === "/prep-track/log") return send(res, 200, steps);
     let raw = "";
     req.on("data", (c) => (raw += c));
     req.on("end", () => {
@@ -36,6 +39,12 @@ http
         if (body.resultsId) saved.set(body.resultsId, body);
         console.log("prep-form", body.resultsId, JSON.stringify(body).length, "bytes", "token:", body.token ? "yes" : "no");
         return send(res, 200, { message: "Workflow got started." });
+      }
+      // Step pings (2026-11-15). Kept in memory; GET /prep-track/log lists them for checks.
+      if (req.url === "/prep-track") {
+        steps.push(body);
+        console.log("prep-track", body.sessionId, body.event, body.step, "token:", body.token ? "yes" : "no", body.device);
+        return send(res, 200, { ok: true });
       }
       if (req.url === "/prep-results") {
         const s = saved.get(body.r);

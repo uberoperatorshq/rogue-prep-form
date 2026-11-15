@@ -285,6 +285,11 @@ const PREFILL_URL = import.meta.env.VITE_PREFILL_URL || "https://uberops.app.n8n
 // Results link (2026-10-23): submit saves the answers in Supabase under a random id; the
 // ?view=complete&r=<id> link asks this for the few values the completion page shows.
 const RESULTS_URL = import.meta.env.VITE_RESULTS_URL || "https://uberops.app.n8n.cloud/webhook/prep-results";
+// Step tracking (2026-11-15): one small ping each time someone reaches a step, so we can see
+// where people stop and whether stopping goes with a no-show. No answers or money numbers are
+// sent, only the step, the page-load id and the booking token (n8n reads the contact from it).
+const TRACK_URL = import.meta.env.VITE_TRACK_URL || "https://uberops.app.n8n.cloud/webhook/prep-track";
+const STEP_EVENTS = ["opened", "income", "credit_debt", "assets_monthly", "you_and_money", "submitted"];
 
 // =========================================================================
 // THEME TOKENS  (kept consistent with the existing live form)
@@ -1276,6 +1281,44 @@ export default function RoguePrepForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramResults]);
 
+  // ---------------- Step tracking ----------------
+  // Fire-and-forget: a failed ping never blocks or slows the form. Each event is sent once per
+  // page load, so Back and Continue again does not double count. A reopened results link
+  // (?view=complete) sends nothing: that person already counted when they submitted.
+  const sentEvents = useRef(new Set());
+  const trackOff = useRef(step === 5);
+  function track(event, extra) {
+    if (trackOff.current || sentEvents.current.has(event)) return;
+    sentEvents.current.add(event);
+    try {
+      fetch(TRACK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          sessionId: resultsId,
+          token: paramToken || null,
+          email: looksLikeEmail(paramEmail) ? paramEmail : null,
+          closer: paramCloser || null,
+          event,
+          step: STEP_EVENTS.indexOf(event),
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          at: new Date().toISOString(),
+          ...(extra || {}),
+        }),
+      }).catch(() => {});
+    } catch { /* tracking must never break the form */ }
+  }
+  useEffect(() => {
+    track("opened");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (step >= 1 && step <= 4) track(STEP_EVENTS[step]);
+    else if (step === 5) track("submitted");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   // Each new step (and the completion page) opens at the top, not where Continue was clicked.
   const firstStepRender = useRef(true);
   useEffect(() => {
@@ -1436,6 +1479,8 @@ export default function RoguePrepForm() {
       // AbortError = our timeout fired. Other errors = network / DNS / CORS / non-2xx.
       // Keep the user's data so they can re-submit; show a clear, inline
       // message instead of a browser alert.
+      // Counted once per load: tells us how often a finished form fails to go through.
+      track("submit_failed", { reason: err && err.name === "AbortError" ? "timeout" : "error" });
       if (err && err.name === "AbortError") {
         setSubmitError(
           "Submission is taking longer than expected. Your details are still here, please try again."
