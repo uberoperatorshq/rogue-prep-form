@@ -25,14 +25,28 @@ const TRAINING_CHAPTERS = [
   { t: 1140, label: "People who sat where you are now" },
 ];
 
-// Six break-out videos from Andy, one question each. Top row bank access,
-// coaching, affording it (moved up 2026-10-03, best completion rate); bottom
-// row partner, debt, deciding. Wistia hashed ids.
+// Six break-out videos from Andy, one question each. Order 2026-11-15 (Patrick, Wistia play rates):
+// deciding first (34% play rate and the most hours watched while it sat last), affording it (39%),
+// bank access, coaching, debt type, partner last (20%). Wistia hashed ids.
 const BREAKOUT_TITLE = "Questions almost everyone asks before this call";
 // Run times from Wistia (2026-10-25), rounded to the nearest second like the Wistia player shows them; 10:36 in total. Stills = each media's custom thumbnail.
 const PARTNER_VIDEO_ID = "ywdmppplme";
 const WISTIA_STILL = "https://embed-ssl.wistia.com/deliveries/";
 const BREAKOUT_VIDEOS = [
+  {
+    id: "w9d1mfco1k",
+    len: "3:09",
+    still: "883b88b099b8ee185fdbb0db11ed5da3",
+    q: "Do I have to decide on the call?",
+    a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
+  },
+  {
+    id: "ncze2s7sqh",
+    len: "1:55",
+    still: "9a962b60838645f3ab609ec6c4c55f7e",
+    q: "What if I can't afford this right now?",
+    a: "Don't do the math against today's balance. What standing still costs, in interest.",
+  },
   {
     id: "r90kiktykf",
     len: "0:52",
@@ -48,20 +62,6 @@ const BREAKOUT_VIDEOS = [
     a: "No, and here's why that's better for you. What the ninety days feel like, and who's beside you.",
   },
   {
-    id: "ncze2s7sqh",
-    len: "1:55",
-    still: "9a962b60838645f3ab609ec6c4c55f7e",
-    q: "What if I can't afford this right now?",
-    a: "Don't do the math against today's balance. What standing still costs, in interest.",
-  },
-  {
-    id: "ywdmppplme",
-    len: "1:06",
-    still: "169985d1352f3993adabbb08dc29d797",
-    q: "What if I want to do this without my partner?",
-    a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
-  },
-  {
     id: "x1qh1guv4j",
     len: "1:21",
     still: "b62863bf8a7d1a00317dfa90daa11b5e",
@@ -69,11 +69,11 @@ const BREAKOUT_VIDEOS = [
     a: "Neither. Andy rules out the three things people assume, and hands the rest to your strategist.",
   },
   {
-    id: "w9d1mfco1k",
-    len: "3:09",
-    still: "883b88b099b8ee185fdbb0db11ed5da3",
-    q: "Do I have to decide on the call?",
-    a: "Nobody makes you. What the hour looks like, and what \"let me think about it\" usually means.",
+    id: "ywdmppplme",
+    len: "1:06",
+    still: "169985d1352f3993adabbb08dc29d797",
+    q: "What if I want to do this without my partner?",
+    a: "Handling money apart is part of what got you here. Why one of you in the room cannot fix it.",
   },
 ];
 
@@ -807,6 +807,17 @@ function downloadCallIcs(start, end, closerName) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// Goal card (2026-11-15): the prospect's own 3-year goal, word for word. Hidden when blank, when it
+// has no letters, when it is a don't-know answer, or when even its first sentence runs past ~2 lines.
+function goalToShow(raw) {
+  const t = String(raw || "").trim().replace(/\s+/g, " ");
+  if (!t || !/[a-z]/i.test(t)) return "";
+  if (/^(idk|i don'?t know|dunno|not sure|unsure|n\/?a|na|none|nothing|no idea|unknown|test|\?+)[.!? ]*$/i.test(t)) return "";
+  if (t.length <= 140) return t;
+  const first = (t.match(/^.*?[.!?](\s|$)/) || [""])[0].trim();
+  return first && first.length <= 140 ? first : "";
+}
+
 function fmtClock(sec) {
   return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
 }
@@ -1089,7 +1100,7 @@ function ShareResults({ link, closerName }) {
     }
   };
   return (
-    <div className="done-share">
+    <div className="done-share" id="share">
       <h2 className="done-share-title">Is someone else joining you on this call?</h2>
       <p className="done-share-body">
         If you share money with a partner, they join the call too. Send them your results so they see the same
@@ -1645,6 +1656,7 @@ export default function RoguePrepForm() {
     const call = upcomingCall(callTime && callTime.at);
     // "Jay will go through this with you on Tuesday." under each number (Patrick 2026-11-15).
     const callDay = call ? callDayWord(call) : "";
+    const goal = goalToShow(financialGoal);
     const callLine =
       (closerName || "Your strategist") + " will go through this with you " +
       (!call ? "on the call." : callDay === "today" || callDay === "tomorrow" ? callDay + "." : "on " + callDay + ".");
@@ -1681,6 +1693,17 @@ export default function RoguePrepForm() {
                 Add to calendar
               </button>
               <div className="done-call-note">Your join link is in your confirmation email.</div>
+            </div>
+          ) : null}
+
+          {goal ? (
+            <div className="done-goal">
+              <div className="done-call-k">Your goal, in your words</div>
+              <p className="done-goal-q">&ldquo;{goal}&rdquo;</p>
+              <p className="done-goal-l">
+                {(closerName || "Your strategist") + " will start from here " +
+                  (!call ? "on the call." : callDay === "today" || callDay === "tomorrow" ? callDay + "." : "on " + callDay + ".")}
+              </p>
             </div>
           ) : null}
 
@@ -1769,6 +1792,29 @@ export default function RoguePrepForm() {
           </div>
 
           <WinsWall />
+
+          {/* Closing card (Patrick 2026-11-15): the page ends on what gets them to the call, not the footer. */}
+          <div className="done-before">
+            <h2 className="done-before-title">Before your call</h2>
+            {call ? (
+              <button
+                type="button"
+                className="done-before-btn done-before-main"
+                onClick={() => downloadCallIcs(call, upcomingCall(callTime && callTime.end), closerName)}
+              >
+                Add {callWhen(call).replace(/ at .*/, "")} to your calendar
+              </button>
+            ) : null}
+            <button type="button" className={"done-before-btn" + (call ? "" : " done-before-main")} onClick={() => jumpTo("training")}>
+              Watch the training (about 15 minutes)
+            </button>
+            {shareLink && income > 0 ? (
+              <button type="button" className="done-before-btn" onClick={() => jumpTo("share")}>
+                Send this to your partner
+              </button>
+            ) : null}
+            <p className="done-before-tip">Be somewhere you can talk and see a screen.</p>
+          </div>
 
           {/* Legal footer, approved by Patrick 2026-10-25. Wording matches Rogue's earnings disclaimer (AWH Consulting LLC). */}
           <footer className="done-legal">

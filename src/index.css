@@ -205,3 +205,11 @@ input[type="number"] {
 .done-call-note { font-size: 13px; color: #9a9a9a; margin-top: 10px; }
 .done-call-line { font-size: 15px; color: #e8e8e8; text-align: center; margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid #262626; }
 .done-share-private { font-size: 13px; color: #9a9a9a; margin: 12px 0 0; }
+.done-goal { background: #161616; border: 1px solid #c0392b; border-radius: 12px; padding: 16px 18px; margin: 0 auto 24px; max-width: 520px; text-align: left; }
+.done-goal-q { font-size: 18px; font-weight: 600; font-style: italic; color: #ffffff; line-height: 1.4; margin: 6px 0 8px; }
+.done-goal-l { font-size: 15px; color: #cfcfcf; margin: 0; }
+.done-before { background: #151515; border: 1px solid #333333; border-radius: 14px; padding: 20px 18px; margin: 36px auto 8px; max-width: 520px; }
+.done-before-title { font-family: 'Barlow Condensed', 'Inter', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 26px; color: #ffffff; margin: 0 0 14px; text-align: center; }
+.done-before-btn { display: block; width: 100%; min-height: 48px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333333; background: transparent; color: #ffffff; font-size: 16px; cursor: pointer; }
+.done-before-main { background: #c0392b; border-color: #c0392b; font-weight: 600; }
+.done-before-tip { font-size: 14px; color: #cfcfcf; text-align: center; margin: 6px 0 0; }
