@@ -1134,6 +1134,8 @@ export default function RoguePrepForm() {
   const [closerName, setCloserName] = useState(paramCloser);
 
   // ---------------- Step 1: Income ----------------
+  // Age (2026-11-15): asked on step 1, required, pre-filled from the setter call when known.
+  const [ageValue, setAgeValue] = useState(() => fromDraft("ageValue"));
   const [annualHouseholdIncome, setAnnualHouseholdIncome] = useState(() => fromDraft("annualHouseholdIncome"));
 
   // ---------------- Step 2: Credit & debt ----------------
@@ -1177,7 +1179,7 @@ export default function RoguePrepForm() {
   // next Next tap, so a valid answer looked rejected.
   useEffect(() => {
     const values = {
-      fullName, email, annualHouseholdIncome,
+      fullName, email, age: ageValue, annualHouseholdIncome,
       creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit,
       retirement401k, homeEquity, otherAssetsValue, savings,
       monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, state: stateValue,
@@ -1197,7 +1199,7 @@ export default function RoguePrepForm() {
       return changed ? next : prev;
     });
   }, [
-    fullName, email, annualHouseholdIncome,
+    fullName, email, ageValue, annualHouseholdIncome,
     creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit,
     retirement401k, homeEquity, otherAssetsValue, savings,
     monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, stateValue,
@@ -1208,11 +1210,11 @@ export default function RoguePrepForm() {
   useEffect(() => {
     if (step === 5) return;
     try {
-      window.sessionStorage.setItem(draftKey, JSON.stringify({ fullName, email, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue }));
+      window.sessionStorage.setItem(draftKey, JSON.stringify({ fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue }));
     } catch {
       /* storage blocked or full: the form still works, it just won't survive a reload */
     }
-  }, [draftKey, step, fullName, email, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue]);
+  }, [draftKey, step, fullName, email, ageValue, annualHouseholdIncome, creditScore, creditCardDebt, personalLoanDebt, debtLastYear, totalCreditLimit, debtNotes, retirement401k, homeEquity, otherAssetsValue, otherAssetsNote, savings, monthlyRentMortgage, monthlyDebtPayments, otherMonthlyExpenses, bankCheckFrequency, financialLiteracy, moneyRelationshipWord, financialFrustration, financialGoal, questions, stateValue]);
 
   // ---------------- Pre-fill from the setter call ----------------
   // Only fills fields the prospect has not typed in. The snapshot rides along
@@ -1268,6 +1270,7 @@ export default function RoguePrepForm() {
           values: v,
           age: Number.isInteger(j.age) ? j.age : null,
         });
+        if (Number.isInteger(j.age)) fill(setAgeValue, j.age);
       })
       .catch((err) => {
         setPrefill((p) => ({ ...p, reason: err && err.name === "AbortError" ? "timeout" : "error" }));
@@ -1393,6 +1396,9 @@ export default function RoguePrepForm() {
       if (isBlankString(email) || !looksLikeEmail(email)) blanks.email = true;
       if (isBlankString(stateValue)) blanks.state = true;
     } else if (step === 1) {
+      const ageN = Number(ageValue);
+      if (isBlankString(ageValue)) blanks.age = true;
+      else if (!Number.isInteger(ageN) || ageN < 18 || ageN > 100) blanks.age = "range";
       if (isBlankString(annualHouseholdIncome)) blanks.annualHouseholdIncome = true;
     } else if (step === 2) {
       if (isBlankString(creditScore)) blanks.creditScore = true;
@@ -1434,7 +1440,7 @@ export default function RoguePrepForm() {
     // then advance (or submit on step 4).
     const STEP_KEYS_FOR_CLEAR = {
       0: ["fullName", "email", "state"],
-      1: ["annualHouseholdIncome"],
+      1: ["age", "annualHouseholdIncome"],
       2: ["creditScore", "creditCardDebt", "personalLoanDebt", "totalCreditLimit"],
       3: ["retirement401k", "homeEquity", "otherAssetsValue", "savings", "monthlyRentMortgage", "monthlyDebtPayments", "otherMonthlyExpenses"],
       4: ["bankCheckFrequency", "financialLiteracy", "moneyRelationshipWord"],
@@ -1451,6 +1457,12 @@ export default function RoguePrepForm() {
   function goBack() {
     if (step > 0) setStep(step - 1);
   }
+
+  // Whole-number age from step 1, or null.
+  const formAge = (() => {
+    const n = Number(ageValue);
+    return !isBlankString(ageValue) && Number.isInteger(n) && n >= 18 && n <= 100 ? n : null;
+  })();
 
   // ---------------- Submit ----------------
   async function handleSubmit() {
@@ -1493,8 +1505,10 @@ export default function RoguePrepForm() {
       questions: questions.trim(),
       // Setter's age (2026-10-23), for the GHL note and the results link. Null when the setter
       // call had none; the completion page then asks for it, but that answer is not sent.
-      age: prefill.age,
-      ageSource: prefill.age ? "setter" : null,
+      // The prospect's own age wins; the setter's is kept alongside when they differ.
+      age: formAge !== null ? formAge : prefill.age,
+      ageSource: formAge === null ? (prefill.age ? "setter" : null) : (prefill.age === formAge ? "setter" : "form"),
+      ageSetter: prefill.age && formAge !== null && prefill.age !== formAge ? prefill.age : null,
       prefill: {
         status: prefill.status,
         reason: prefill.reason === "pending" ? "timeout" : prefill.reason,
@@ -1609,7 +1623,7 @@ export default function RoguePrepForm() {
               <RetirementSnapshot
                 income={income}
                 retirement={parseNumOrNull(retirement401k)}
-                knownAge={prefill.age || savedAge}
+                knownAge={formAge || prefill.age || savedAge}
               />
               <DebtClock
                 cardDebt={parseNumOrNull(creditCardDebt)}
@@ -1768,7 +1782,7 @@ export default function RoguePrepForm() {
 
           {blankCount > 0 ? (
             <div style={styles.blankNote}>
-              {blankCount === 1 ? "1 answer is still blank above." : `${blankCount} answers are still blank above.`}
+              {blankCount === 1 ? "1 answer above still needs filling in." : `${blankCount} answers above still need filling in.`}
             </div>
           ) : null}
           <div style={styles.nav}>
@@ -1785,8 +1799,8 @@ export default function RoguePrepForm() {
   const STEPS = [
     {
       label: "Step 1 of 4",
-      title: "Income",
-      desc: "What’s coming in each year, before tax.",
+      title: "About you",
+      desc: "Your age and what’s coming in each year, before tax.",
     },
     {
       label: "Step 2 of 4",
@@ -1832,7 +1846,30 @@ export default function RoguePrepForm() {
 
         {step === 1 && (
           <div style={styles.card}>
-            <div style={styles.cardLabel}>Gross annual household income</div>
+            <div style={styles.cardLabel}>About you</div>
+            <div style={styles.fieldBlock}>
+              <label style={styles.label}>Your age</label>
+              <div style={styles.helper}>Used for the retirement check on your results.</div>
+              <input
+                style={styles.input}
+                placeholder="e.g. 42"
+                type="number"
+                onWheel={(e) => e.currentTarget.blur()}
+                inputMode="numeric"
+                value={ageValue}
+                onChange={(e) => setAgeValue(e.target.value)}
+              />
+              {prefill.status === "filled" && prefill.age && String(prefill.age) === String(ageValue).trim() ? (
+                <div style={styles.prefillHint}>
+                  From {prefill.setter ? `your call with ${prefill.setter}` : "your call with our team"}. Change it if it&apos;s off.
+                </div>
+              ) : null}
+              {errors.age ? (
+                <div style={styles.errText} data-err="1">
+                  {errors.age === "range" ? "Please enter your age in years, for example 42." : "Please add your age."}
+                </div>
+              ) : null}
+            </div>
             <div style={styles.fieldBlockLast}>
               <label style={styles.label}>Annual income, before tax ($)</label>
               <div style={styles.helper}>
@@ -2309,7 +2346,7 @@ export default function RoguePrepForm() {
 
         {blankCount > 0 ? (
           <div style={styles.blankNote}>
-            {blankCount === 1 ? "1 answer is still blank above." : `${blankCount} answers are still blank above.`}
+            {blankCount === 1 ? "1 answer above still needs filling in." : `${blankCount} answers above still need filling in.`}
           </div>
         ) : null}
         <div style={styles.nav}>
