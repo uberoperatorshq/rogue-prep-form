@@ -2009,7 +2009,7 @@ export default function RoguePrepForm() {
               <div style={styles.fieldBlockLast}>
                 <label style={styles.label}>Other assets ($)</label>
                 <div style={styles.helper}>
-                  Anything else: investments, savings bonds, a HELOC you could draw on. Enter 0 if none.
+                  Stocks, crypto, a brokerage account, savings bonds, anything else you own that&apos;s worth money. Don&apos;t count your home, it&apos;s covered above. Enter 0 if none.
                 </div>
                 <input
                   style={styles.input}
@@ -2030,7 +2030,7 @@ export default function RoguePrepForm() {
                   </label>
                   <input
                     style={styles.input}
-                    placeholder="e.g. brokerage account, HELOC, savings bonds"
+                    placeholder="e.g. stocks, crypto, savings bonds"
                     value={otherAssetsNote}
                     onChange={(e) => setOtherAssetsNote(e.target.value)}
                   />
