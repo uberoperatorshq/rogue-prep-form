@@ -1196,6 +1196,8 @@ export default function RoguePrepForm() {
     }
   });
   const fromDraft = (k) => (typeof draft[k] === "string" ? draft[k] : "");
+  // Closer call time from the pre-fill or the results link: { at, end } ISO strings.
+  const [callTime, setCallTime] = useState(() => (draft.callTime && typeof draft.callTime.at === "string" ? draft.callTime : null));
   // One id per page load, so a re-submit after a timeout updates the same saved row.
   const [resultsId] = useState(() => (typeof window !== "undefined" ? newResultsId() : ""));
 
@@ -1302,8 +1304,6 @@ export default function RoguePrepForm() {
   });
   // Age from a results link (setter age saved at submit). Never asked on the form.
   const [savedAge, setSavedAge] = useState(null);
-  // Closer call time from the pre-fill or the results link: { at, end } ISO strings.
-  const [callTime, setCallTime] = useState(() => (draft.callTime && typeof draft.callTime.at === "string" ? draft.callTime : null));
   // Completion page: chapter the training starts from, breakout opened on phone.
   const [trainingStart, setTrainingStart] = useState(null);
   const [openBreakout, setOpenBreakout] = useState(null);
