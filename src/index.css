@@ -254,8 +254,11 @@ html:root .done-snap-v { color: #1b1714; font-family: 'Archivo', sans-serif; }
 html:root .done-snap-ahead { color: #1f7a45; }
 html:root .done-snap-m { color: #6e645a; }
 html:root .done-snap-note { color: #6e645a; }
-html:root .done-chapters button { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; color: #1b1714; }
-html:root .done-chapters button:hover { background: transparent; }
+/* chapters: one card, rows split by dashed rules (Patrick 2026-11-18) */
+html:root .done-chapters { background: #fffdf8; border: 1.5px solid #1b1714; border-radius: 12px; box-shadow: 4px 4px 0 #1b1714; gap: 0; padding: 4px 0; overflow: hidden; }
+html:root .done-chapters li + li { border-top: 1.5px dashed #d9cfbf; }
+html:root .done-chapters button { background: transparent; border: 0; box-shadow: none; border-radius: 0; color: #1b1714; }
+html:root .done-chapters button:hover { background: #f4efe6; }
 html:root .done-chapter-t { font-family: 'Archivo', sans-serif; }
 html:root .done-q-len { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; color: #1b1714; font-family: 'Archivo', sans-serif; }
 html:root .done-q-thumb { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
