@@ -302,22 +302,26 @@ const STEP_EVENTS = ["opened", "income", "credit_debt", "assets_monthly", "you_a
 // THEME TOKENS  (kept consistent with the existing live form)
 // =========================================================================
 
-const ACCENT = "#b33d33";
-const BG = "#111111";
-const CARD = "#1a1a1a";
-const BORDER = "#2a2a2a";
-const TEXT = "#e8e8e8";
-const MUTED = "#888888";
-const INPUT_BG = "#222222";
-const ERR = "#d96a5a";     // red-amber for inline error text on required-blank
-const NUDGE = "#d8a35e";   // amber, kept for any soft nudges
+const ACCENT = "#b33626";
+const BG = "#f4efe6";
+const CARD = "#fffdf8";
+const BORDER = "#d9cfbf";
+const TEXT = "#1b1714";
+const MUTED = "#6e645a";
+const INPUT_BG = "#ffffff";
+const ERR = "#a8321f";     // red-amber for inline error text on required-blank
+const NUDGE = "#8a5a12";   // amber, kept for any soft nudges
+const INK = "#1b1714";      // C paper rebrand (2026-11-18): ink for headings, outlines and offset shadows
+const HEAD = "'Archivo', 'Helvetica Neue', Arial, sans-serif";
 
 const styles = {
   page: {
     minHeight: "100vh",
     background: BG,
     color: TEXT,
-    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    fontFamily: HEAD,
+    backgroundImage: "radial-gradient(rgba(27,23,20,0.08) 1px, transparent 1.2px)",
+    backgroundSize: "22px 22px",
     padding: 0,
   },
   inner: {
@@ -326,7 +330,7 @@ const styles = {
     padding: "24px 18px 56px",
   },
   logoWrap: { textAlign: "center", marginTop: 8, marginBottom: 6 },
-  logoRogue: { fontSize: 20, fontWeight: 800, letterSpacing: 2, color: "#fff" },
+  logoRogue: { fontSize: 20, fontWeight: 800, letterSpacing: 2, color: INK },
   logoFinance: { fontSize: 20, fontWeight: 800, letterSpacing: 2, color: ACCENT },
   subtitle: {
     textAlign: "center",
@@ -338,7 +342,7 @@ const styles = {
   privacy: {
     textAlign: "center",
     fontSize: 11,
-    color: "#888",
+    color: MUTED,
     marginBottom: 24,
     lineHeight: 1.5,
     padding: "0 12px",
@@ -356,17 +360,21 @@ const styles = {
     fontSize: 11,
     color: MUTED,
     textTransform: "uppercase",
-    letterSpacing: 1.5,
+    letterSpacing: 0,
+    textTransform: "none",
+    fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
+    color: ACCENT,
     marginBottom: 6,
   },
-  stepTitle: { fontSize: 22, fontWeight: 600, marginBottom: 6, color: "#fff", lineHeight: 1.25 },
+  stepTitle: { fontSize: 26, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 6, color: INK, lineHeight: 1.1, fontFamily: HEAD },
   stepDesc: { fontSize: 14, color: MUTED, marginBottom: 22, lineHeight: 1.55 },
   card: {
     background: CARD,
     borderRadius: 12,
-    border: `1px solid ${BORDER}`,
+    border: `1.5px solid ${INK}`,
+    boxShadow: `4px 4px 0 ${INK}`,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   cardLabel: {
     fontSize: 12,
@@ -386,14 +394,14 @@ const styles = {
     fontWeight: 500,
     lineHeight: 1.35,
   },
-  optionalTag: { color: "#888", fontWeight: 400, marginLeft: 4 },
+  optionalTag: { color: MUTED, fontWeight: 400, marginLeft: 4 },
   errText: { fontSize: 12, color: ERR, marginTop: 6, lineHeight: 1.45 },
   blankNote: { fontSize: 13, color: ERR, textAlign: "center", marginBottom: 10, lineHeight: 1.45 },
-  prefillHint: { fontSize: 12, color: "#777", marginTop: 6, lineHeight: 1.45 },
+  prefillHint: { fontSize: 12, color: MUTED, marginTop: 6, lineHeight: 1.45 },
   submitErr: {
     fontSize: 13,
     color: ERR,
-    background: "#241616",
+    background: "#fbeae6",
     border: `1px solid ${ERR}`,
     borderRadius: 8,
     padding: "10px 12px",
@@ -403,8 +411,8 @@ const styles = {
   },
   calcReadout: {
     fontSize: 13,
-    color: "#aaa",
-    background: "#1e1e1e",
+    color: "#4a423b",
+    background: "#fbf6ec",
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
     padding: "10px 12px",
@@ -415,17 +423,17 @@ const styles = {
   },
   calcConfirm: {
     fontSize: 12,
-    color: "#9a9a9a",
+    color: "#4a423b",
     marginTop: 8,
     lineHeight: 1.45,
     fontStyle: "italic",
   },
-  helper: { fontSize: 13, color: "#9a9a9a", marginBottom: 8, lineHeight: 1.45 },
+  helper: { fontSize: 13, color: "#4a423b", marginBottom: 8, lineHeight: 1.45 },
   nudge: { fontSize: 12, color: NUDGE, marginTop: 6, lineHeight: 1.45 },
   input: {
     width: "100%",
     background: INPUT_BG,
-    border: `1px solid ${BORDER}`,
+    border: `1.5px solid ${INK}`,
     borderRadius: 8,
     padding: "12px 12px",
     color: TEXT,
@@ -436,7 +444,7 @@ const styles = {
   textarea: {
     width: "100%",
     background: INPUT_BG,
-    border: `1px solid ${BORDER}`,
+    border: `1.5px solid ${INK}`,
     borderRadius: 8,
     padding: "12px 12px",
     color: TEXT,
@@ -450,7 +458,7 @@ const styles = {
   select: {
     width: "100%",
     background: INPUT_BG,
-    border: `1px solid ${BORDER}`,
+    border: `1.5px solid ${INK}`,
     borderRadius: 8,
     padding: "12px 12px",
     color: TEXT,
@@ -461,7 +469,7 @@ const styles = {
   },
   addBtn: {
     background: "none",
-    border: `1px dashed ${BORDER}`,
+    border: `1.5px dashed ${MUTED}`,
     borderRadius: 8,
     padding: 10,
     width: "100%",
@@ -473,7 +481,7 @@ const styles = {
   removeBtn: {
     background: "none",
     border: "none",
-    color: "#666",
+    color: MUTED,
     fontSize: 22,
     cursor: "pointer",
     padding: "0 0 0 8px",
@@ -486,30 +494,33 @@ const styles = {
     flex: 1,
     background: ACCENT,
     color: "#fff",
-    border: "none",
-    borderRadius: 8,
+    border: `1.5px solid ${INK}`,
+    boxShadow: `4px 4px 0 ${INK}`,
+    borderRadius: 10,
     padding: "14px",
-    fontSize: 15,
-    fontWeight: 600,
+    fontSize: 16,
+    fontWeight: 700,
     cursor: "pointer",
     transition: "opacity 0.2s",
   },
   btnSecondary: {
     flex: 1,
     background: "none",
-    color: MUTED,
-    border: `1px solid ${BORDER}`,
-    borderRadius: 8,
+    color: INK,
+    border: `1.5px solid ${INK}`,
+    borderRadius: 10,
     padding: "14px",
     fontSize: 15,
     cursor: "pointer",
   },
   divider: { borderTop: `1px solid ${BORDER}`, margin: "16px 0" },
   introHeadline: {
-    fontSize: 26,
-    fontWeight: 700,
-    color: "#fff",
-    lineHeight: 1.2,
+    fontSize: 30,
+    fontWeight: 800,
+    letterSpacing: "-0.035em",
+    fontFamily: HEAD,
+    color: INK,
+    lineHeight: 1.05,
     marginTop: 8,
     marginBottom: 12,
     textAlign: "center",
@@ -540,7 +551,7 @@ const styles = {
   },
   doneWrap: { textAlign: "center", paddingTop: 40 },
   doneCheck: { fontSize: 56, marginBottom: 12, color: ACCENT, lineHeight: 1 },
-  doneTitle: { fontSize: 24, fontWeight: 600, color: "#fff", marginBottom: 14 },
+  doneTitle: { fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", fontFamily: HEAD, color: INK, marginBottom: 14 },
   doneBody: {
     fontSize: 15,
     color: TEXT,
@@ -551,14 +562,17 @@ const styles = {
   videoCard: {
     background: CARD,
     borderRadius: 14,
-    border: `1px solid ${BORDER}`,
+    border: `1.5px solid ${INK}`,
+    boxShadow: `4px 4px 0 ${INK}`,
     padding: 16,
     marginTop: 8,
   },
   videoTitle: {
-    fontSize: 18,
-    fontWeight: 600,
-    color: "#fff",
+    fontSize: 20,
+    fontWeight: 800,
+    letterSpacing: "-0.02em",
+    fontFamily: HEAD,
+    color: INK,
     lineHeight: 1.3,
     textAlign: "center",
     marginBottom: 12,
@@ -615,7 +629,7 @@ const styles = {
   },
   videoSoon: {
     fontSize: 11,
-    color: "#888",
+    color: "#d9cfbf",
     textTransform: "uppercase",
     letterSpacing: 2,
   },

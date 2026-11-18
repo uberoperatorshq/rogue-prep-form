@@ -1,5 +1,5 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #111111; }
+body { background: #f4efe6; }
 
 /* Hide the native number-input spinner arrows globally. */
 input[type="number"]::-webkit-inner-spin-button,
@@ -214,3 +214,76 @@ input[type="number"] {
 .done-before-main { background: #c0392b; border-color: #c0392b; font-weight: 600; }
 .done-before-tip { font-size: 14px; color: #cfcfcf; text-align: center; margin: 6px 0 0; }
 .done-reviews-show { display: block; margin: 18px auto 10px; }
+
+
+/* ---------------- C paper rebrand (2026-11-18, draft branch) ----------------
+   Generated overrides (cgen.py) for the completion screen: paper background, sticker cards,
+   ink text, Archivo headings, red marker underline on accent words. Look only. */
+html:root .done-page { background-color: #f4efe6; background-image: radial-gradient(rgba(27,23,20,0.08) 1px, transparent 1.2px); background-size: 22px 22px; }
+html:root .done-page { background: transparent; color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-eyebrow { font-family: 'IBM Plex Mono', 'Courier New', monospace !important; font-weight: 500; letter-spacing: -0.01em; text-transform: none; }
+html:root .done-title { color: #1b1714; font-family: 'Archivo', sans-serif !important; font-weight: 800; letter-spacing: -0.03em; text-transform: none; }
+html:root .done-body { color: #6e645a; }
+html:root .done-card { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-card-title { color: #1b1714; font-family: 'Archivo', sans-serif !important; font-weight: 800; letter-spacing: -0.03em; text-transform: none; }
+html:root .done-card-body { color: #6e645a; }
+html:root .done-video-frame { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-qs-title { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-q { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-q-label { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-q-teaser { color: #4a423b; }
+html:root .done-stat-divider { background: transparent; }
+html:root .done-stat-num { font-family: 'Archivo', sans-serif !important; font-weight: 800; letter-spacing: -0.03em; text-transform: none; }
+html:root .done-stat-label { color: #6e645a; font-family: 'Archivo', sans-serif; }
+html:root .done-tp-name { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-tp-stars { color: #1f7a45; }
+html:root .done-tp-score { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-proof-title { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-proof-sub { color: #6e645a; }
+html:root .done-review { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-review-stars { color: #1f7a45; }
+html:root .done-review-name { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-review-date { color: #6e645a; }
+html:root .done-review-text { color: #4a423b; }
+html:root .done-snap-card { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-snap-age { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-snap-age input { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; color: #1b1714; }
+html:root .done-snap-cell { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-snap-k { color: #4a423b; }
+html:root .done-snap-v { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-snap-ahead { color: #1f7a45; }
+html:root .done-snap-m { color: #6e645a; }
+html:root .done-snap-note { color: #6e645a; }
+html:root .done-chapters button { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; color: #1b1714; }
+html:root .done-chapters button:hover { background: transparent; }
+html:root .done-chapter-t { font-family: 'Archivo', sans-serif; }
+html:root .done-q-len { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-q-thumb { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-debt-tick-v { font-family: 'Archivo', sans-serif; }
+html:root .done-debt-tick-k { color: #4a423b; }
+html:root .done-debt-live { border-color: #d9cfbf; }
+html:root .done-share { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-share-title { color: #1b1714; font-family: 'Archivo', sans-serif; }
+html:root .done-share-body { color: #4a423b; }
+html:root .done-share-btn { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; color: #1b1714; }
+html:root .done-results-title { color: #1b1714; font-family: 'Archivo', sans-serif !important; font-weight: 800; letter-spacing: -0.03em; text-transform: none; }
+html:root .done-legal { border-top-color: #d9cfbf; }
+html:root .done-legal p { color: #6e645a; }
+html:root .done-legal-links a { color: #6e645a; }
+html:root .done-win { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-call { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-call-k { color: #6e645a; text-transform: none; letter-spacing: 0; }
+html:root .done-call-when { color: #1b1714; }
+html:root .done-call-tz { color: #4a423b; }
+html:root .done-call-btn { border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-call-note { color: #4a423b; }
+html:root .done-call-line { color: #1b1714; border-top-color: #d9cfbf; }
+html:root .done-share-private { color: #4a423b; }
+html:root .done-goal { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-goal-q { color: #1b1714; }
+html:root .done-goal-l { color: #4a423b; }
+html:root .done-before { background: #fffdf8; border: 1.5px solid #1b1714; box-shadow: 4px 4px 0 #1b1714; }
+html:root .done-before-title { color: #1b1714; font-family: 'Archivo', sans-serif !important; font-weight: 800; letter-spacing: -0.03em; text-transform: none; }
+html:root .done-before-btn { color: #1b1714; border-color: #d9cfbf; }
+html:root .done-before-tip { color: #4a423b; }
+html:root :is(h1,h2,h3,[class*="h1"],[class*="h2"],[class*="headline"],[class*="title"]) .done-title-accent { color: #1b1714 !important; text-decoration: underline; text-decoration-color: #b33626; text-decoration-thickness: 0.14em; text-underline-offset: 0.12em; text-decoration-skip-ink: none; }
